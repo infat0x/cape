@@ -168,12 +168,12 @@ function buildExtractorUI(sdk) {
         <table class="ape-table">
           <thead>
             <tr>
-              <th class="col-id" data-col="id">ID <span id="sort-arrow-id">▼</span></th>
-              <th class="col-payload" data-col="payload">Payload 1 <span id="sort-arrow-payload"></span></th>
-              <th class="col-status" data-col="status">Status <span id="sort-arrow-status"></span></th>
-              <th class="col-length" data-col="length">Length <span id="sort-arrow-length"></span></th>
-              <th class="col-time" data-col="time">Round-trip Time (ms) <span id="sort-arrow-time"></span></th>
-              <th class="col-sent" data-col="sent">Request Sent At <span id="sort-arrow-sent"></span></th>
+              <th class="col-id" data-col="id">ID <span id="sort-arrow-id">▼</span><div class="ape-col-resizer" title="Drag to resize"></div></th>
+              <th class="col-payload" data-col="payload">Payload 1 <span id="sort-arrow-payload"></span><div class="ape-col-resizer" title="Drag to resize"></div></th>
+              <th class="col-status" data-col="status">Status <span id="sort-arrow-status"></span><div class="ape-col-resizer" title="Drag to resize"></div></th>
+              <th class="col-length" data-col="length">Length <span id="sort-arrow-length"></span><div class="ape-col-resizer" title="Drag to resize"></div></th>
+              <th class="col-time" data-col="time">Round-trip Time (ms) <span id="sort-arrow-time"></span><div class="ape-col-resizer" title="Drag to resize"></div></th>
+              <th class="col-sent" data-col="sent">Request Sent At <span id="sort-arrow-sent"></span><div class="ape-col-resizer" title="Drag to resize"></div></th>
               <th class="col-filler"></th>
             </tr>
           </thead>
@@ -595,7 +595,9 @@ function buildExtractorUI(sdk) {
 
   // Sort click handling
   sortHeaders.forEach((th) => {
-    th.addEventListener("click", () => {
+    th.addEventListener("click", (e) => {
+      if (e.target && e.target.classList.contains("ape-col-resizer")) return;
+
       const col = th.getAttribute("data-col");
       if (sortColumn === col) {
         sortDirection = sortDirection === "asc" ? "desc" : "asc";
@@ -619,6 +621,70 @@ function buildExtractorUI(sdk) {
       applyFiltersAndRender();
     });
   });
+
+  // Dynamic column width resizing
+  const initColumnResizing = () => {
+    const resizers = root.querySelectorAll(".ape-col-resizer");
+
+    try {
+      const saved = JSON.parse(localStorage.getItem("caido_ape_col_widths") || "{}");
+      Object.keys(saved).forEach((colKey) => {
+        const th = root.querySelector(`th[data-col="${colKey}"]`);
+        if (th && saved[colKey]) {
+          th.style.width = `${saved[colKey]}px`;
+        }
+      });
+    } catch (e) {
+      console.debug("Failed to load saved column widths", e);
+    }
+
+    resizers.forEach((resizer) => {
+      resizer.addEventListener("click", (e) => {
+        e.stopPropagation();
+      });
+
+      resizer.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const th = resizer.parentElement;
+        const colKey = th.getAttribute("data-col");
+        const startX = e.clientX;
+        const startWidth = th.offsetWidth;
+
+        resizer.classList.add("resizing");
+        document.body.style.cursor = "col-resize";
+        document.body.style.userSelect = "none";
+
+        const onMouseMove = (moveEvent) => {
+          const deltaX = moveEvent.clientX - startX;
+          const newWidth = Math.max(45, startWidth + deltaX);
+          th.style.width = `${newWidth}px`;
+        };
+
+        const onMouseUp = () => {
+          resizer.classList.remove("resizing");
+          document.body.style.cursor = "";
+          document.body.style.userSelect = "";
+          document.removeEventListener("mousemove", onMouseMove);
+          document.removeEventListener("mouseup", onMouseUp);
+
+          try {
+            const saved = JSON.parse(localStorage.getItem("caido_ape_col_widths") || "{}");
+            saved[colKey] = parseInt(th.style.width, 10);
+            localStorage.setItem("caido_ape_col_widths", JSON.stringify(saved));
+          } catch (e) {
+            console.debug("Failed to save column width", e);
+          }
+        };
+
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", onMouseUp);
+      });
+    });
+  };
+
+  initColumnResizing();
 
   // Mode toggles
   reqToggleBtns.forEach((btn) => {
