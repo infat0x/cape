@@ -1,15 +1,14 @@
 /**
  * Automate Payload Extractor - Stylesheet
- * Strictly built with Caido's authentic dark graphite palette and CodeMirror syntax tokens.
+ * Native Caido graphite/charcoal UI strictly replicating Caido's Automate layout.
  */
 
 :root {
-  /* Neutral Dark Charcoal & Graphite Surfaces (zero blue in background) */
+  /* Caido Native Neutral Palette */
   --caido-bg-app: #181a1f;
   --caido-bg-panel: #202227;
   --caido-bg-surface: #24262c;
-  --caido-bg-surface-elevated: #2b2e35;
-  --caido-bg-hover: #2e3138;
+  --caido-bg-surface-hover: #2c2f37;
   --caido-bg-selected: #353842;
   --caido-border: #2c2f36;
   --caido-border-subtle: #24262d;
@@ -20,31 +19,20 @@
   --caido-text-bright: #f0f0f2;
   --caido-text: #d0d2d7;
   --caido-text-muted: #8c9098;
-  --caido-text-dim: #5c6068;
+  --caido-text-dim: #5d626e;
 
-  /* Caido Accent (Orange/Amber) */
+  /* Accent (Caido Orange) */
   --caido-accent: #f0642f;
   --caido-accent-hover: #fa723d;
-  --caido-accent-dim: rgba(240, 100, 47, 0.15);
+  --caido-accent-dim: rgba(240, 100, 47, 0.16);
 
-  /* Caido Native Syntax & Token Colors */
-  --caido-blue: #79c0ff;
-  --caido-blue-dim: rgba(56, 139, 253, 0.15);
-  --caido-blue-border: rgba(88, 166, 255, 0.35);
-
-  --caido-yellow: #fec418;
+  /* Syntax Highlighting (Matching Caido Screen 2 / CodeMirror) */
   --caido-purple: #d2a8ff;
+  --caido-yellow: #fec418;
+  --caido-cyan: #79c0ff;
   --caido-green: #4ec96d;
-  --caido-green-dim: rgba(78, 201, 109, 0.15);
-  --caido-green-border: rgba(78, 201, 109, 0.35);
-
   --caido-red: #f85149;
-  --caido-red-dim: rgba(248, 81, 73, 0.15);
-  --caido-red-border: rgba(248, 81, 73, 0.35);
-
   --caido-orange: #ffab70;
-  --caido-orange-dim: rgba(210, 153, 34, 0.15);
-  --caido-orange-border: rgba(210, 153, 34, 0.35);
 
   --caido-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --caido-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
@@ -63,7 +51,7 @@
   font-size: 12px;
 }
 
-/* Top Bar */
+/* Single Unified Sleek Top Toolbar */
 .ape-toolbar {
   display: flex;
   align-items: center;
@@ -73,6 +61,7 @@
   background-color: var(--caido-bg-panel);
   border-bottom: 1px solid var(--caido-border);
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .ape-control-item {
@@ -90,9 +79,8 @@
   white-space: nowrap;
 }
 
-.ape-select,
-.ape-search-input {
-  background-color: var(--caido-bg-surface);
+.ape-select {
+  background-color: var(--caido-bg-app);
   border: 1px solid var(--caido-border-strong);
   border-radius: 4px;
   color: var(--caido-text);
@@ -101,18 +89,13 @@
   height: 26px;
   padding: 0 8px;
   outline: none;
+  cursor: pointer;
   box-sizing: border-box;
   transition: border-color 0.12s ease;
 }
 
-.ape-select:focus,
-.ape-search-input:focus {
+.ape-select:focus {
   border-color: var(--caido-accent);
-}
-
-.ape-select {
-  cursor: pointer;
-  min-width: 200px;
 }
 
 .ape-search-wrapper {
@@ -120,27 +103,45 @@
   display: flex;
   align-items: center;
   flex: 1;
-  max-width: 380px;
+  max-width: 440px;
 }
 
 .ape-search-icon {
   position: absolute;
   left: 8px;
   font-size: 11px;
-  color: var(--caido-text-muted);
+  color: var(--caido-text-dim);
   pointer-events: none;
 }
 
 .ape-search-input {
   width: 100%;
-  padding-left: 26px;
+  background-color: var(--caido-bg-app);
+  border: 1px solid var(--caido-border-strong);
+  border-radius: 4px;
+  color: var(--caido-text);
+  font-family: var(--caido-font-sans);
+  font-size: 12px;
+  height: 26px;
+  padding: 0 8px 0 26px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.12s ease;
+}
+
+.ape-search-input:focus {
+  border-color: var(--caido-accent);
+}
+
+.ape-search-input::placeholder {
+  color: var(--caido-text-dim);
 }
 
 .ape-spacer {
   flex: 1;
 }
 
-/* Buttons */
+/* Action Buttons */
 .ape-btn {
   display: inline-flex;
   align-items: center;
@@ -174,7 +175,7 @@
 }
 
 .ape-btn-secondary:hover {
-  background-color: var(--caido-bg-hover);
+  background-color: var(--caido-bg-surface-hover);
   border-color: var(--caido-text-muted);
 }
 
@@ -182,74 +183,6 @@
   width: 26px;
   height: 26px;
   padding: 0;
-}
-
-/* Applied Filters Bar (Under Toolbar, Caido Style) */
-.ape-filters-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  background-color: var(--caido-bg-panel);
-  border-bottom: 1px solid var(--caido-border);
-  font-size: 11px;
-  flex-shrink: 0;
-}
-
-.ape-filters-label {
-  color: var(--caido-text-muted);
-  font-weight: 500;
-  margin-right: 2px;
-}
-
-.ape-filter-chip {
-  padding: 2px 8px;
-  border-radius: 3px;
-  background-color: transparent;
-  border: 1px solid var(--caido-border);
-  color: var(--caido-text-muted);
-  cursor: pointer;
-  font-family: var(--caido-font-sans);
-  font-size: 11px;
-  user-select: none;
-  transition: all 0.12s ease;
-}
-
-.ape-filter-chip:hover {
-  background-color: var(--caido-bg-hover);
-  color: var(--caido-text);
-}
-
-.ape-filter-chip.active {
-  background-color: var(--caido-bg-selected);
-  border-color: var(--caido-border-strong);
-  color: var(--caido-text-bright);
-  font-weight: 500;
-}
-
-.ape-filter-chip.chip-200.active {
-  background-color: var(--caido-green-dim);
-  border-color: var(--caido-green-border);
-  color: var(--caido-green);
-}
-
-.ape-filter-chip.chip-3xx.active {
-  background-color: var(--caido-blue-dim);
-  border-color: var(--caido-blue-border);
-  color: var(--caido-blue);
-}
-
-.ape-filter-chip.chip-4xx.active {
-  background-color: var(--caido-red-dim);
-  border-color: var(--caido-red-border);
-  color: var(--caido-red);
-}
-
-.ape-filter-sep {
-  height: 14px;
-  width: 1px;
-  background-color: var(--caido-border-strong);
-  margin: 0 4px;
 }
 
 .ape-checkbox-chip {
@@ -260,7 +193,6 @@
   font-size: 11px;
   cursor: pointer;
   user-select: none;
-  margin-left: auto;
 }
 
 .ape-checkbox-chip input {
@@ -269,7 +201,7 @@
   cursor: pointer;
 }
 
-/* Master-Detail Workspace */
+/* Main Workspace */
 .ape-workspace {
   display: flex;
   flex-direction: column;
@@ -278,11 +210,11 @@
   position: relative;
 }
 
-/* Upper: Payloads Table */
+/* Table Pane */
 .ape-table-pane {
   flex: 1;
   overflow: auto;
-  min-height: 140px;
+  min-height: 120px;
   background-color: var(--caido-bg-app);
 }
 
@@ -296,7 +228,7 @@
 .ape-table thead {
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 5;
   background-color: var(--caido-bg-panel);
 }
 
@@ -306,10 +238,16 @@
   font-weight: 500;
   color: var(--caido-text-muted);
   border-bottom: 1px solid var(--caido-border);
-  border-right: 1px solid var(--caido-border);
+  border-right: 1px solid var(--caido-border-subtle);
   white-space: nowrap;
   user-select: none;
   font-size: 11px;
+  cursor: pointer;
+  transition: color 0.1s ease;
+}
+
+.ape-table th:hover {
+  color: var(--caido-text-bright);
 }
 
 .ape-table th:last-child {
@@ -317,9 +255,9 @@
 }
 
 .ape-table td {
-  padding: 3px 8px;
-  border-bottom: 1px solid var(--caido-border);
-  border-right: 1px solid var(--caido-border);
+  padding: 2px 8px;
+  border-bottom: 1px solid var(--caido-border-subtle);
+  border-right: 1px solid var(--caido-border-subtle);
   color: var(--caido-text);
   white-space: nowrap;
   overflow: hidden;
@@ -327,6 +265,8 @@
   vertical-align: middle;
   height: 25px;
   box-sizing: border-box;
+  font-family: var(--caido-font-mono);
+  font-size: 12px;
 }
 
 .ape-table td:last-child {
@@ -335,95 +275,112 @@
 
 .ape-table tbody tr {
   cursor: pointer;
-  position: relative;
-  transition: background-color 0.06s ease;
+  background-color: var(--caido-bg-app);
+  transition: background-color 0.05s ease;
 }
 
 .ape-table tbody tr:hover {
-  background-color: var(--caido-bg-hover);
+  background-color: #23252b;
 }
 
-/* Selected row style matching Caido's amber left bar */
+/* Selected row strictly matches Caido: clean uniform background highlight */
 .ape-table tbody tr.ape-selected-row {
   background-color: var(--caido-bg-selected);
-  box-shadow: inset 3px 0 0 var(--caido-accent);
+  color: var(--caido-text-bright);
 }
 
+.ape-table tbody tr.ape-selected-row td {
+  color: var(--caido-text-bright);
+}
+
+/* Column Widths (matching Caido Automate screenshot) */
 .col-id {
-  width: 55px;
-  font-family: var(--caido-font-mono);
-  color: var(--caido-text-muted);
-}
-
-.col-method {
-  width: 60px;
-  font-family: var(--caido-font-mono);
-  font-weight: 600;
-}
-
-.col-path {
-  width: 220px;
-  font-family: var(--caido-font-mono);
+  width: 70px;
   color: var(--caido-text-muted);
 }
 
 .col-payload {
-  font-family: var(--caido-font-mono);
   color: var(--caido-text-bright);
-  font-weight: 500;
 }
 
 .col-status {
-  width: 65px;
-  font-family: var(--caido-font-mono);
+  width: 80px;
 }
 
 .col-length {
-  width: 75px;
-  font-family: var(--caido-font-mono);
+  width: 90px;
   color: var(--caido-text-muted);
 }
 
 .col-time {
-  width: 85px;
-  font-family: var(--caido-font-mono);
+  width: 155px;
   color: var(--caido-text-muted);
 }
 
-.col-action {
-  width: 45px;
-  text-align: center;
+.col-sent {
+  width: 175px;
+  color: var(--caido-text-muted);
 }
 
-/* Method Colors in Table */
-.method-get { color: var(--caido-blue); }
-.method-post { color: var(--caido-orange); }
+.col-filler {
+  width: auto;
+}
 
 /* Status Code Colors in Table */
 .status-200 { color: var(--caido-green); }
-.status-300 { color: var(--caido-blue); }
+.status-300 { color: var(--caido-cyan); }
 .status-400, .status-500 { color: var(--caido-red); }
-.status-none { color: var(--caido-text-muted); }
-
-.ape-row-copy-btn {
-  background: transparent;
-  border: none;
-  color: var(--caido-text-muted);
-  cursor: pointer;
-  padding: 2px 5px;
-  border-radius: 3px;
-  font-size: 11px;
-}
-
-.ape-row-copy-btn:hover {
-  background-color: var(--caido-bg-surface-elevated);
-  color: var(--caido-text-bright);
-}
+.status-none { color: var(--caido-text-dim); }
 
 .ape-empty-message {
   text-align: center;
   padding: 48px 16px;
+  color: var(--caido-text-dim);
+  font-family: var(--caido-font-sans);
+}
+
+/* Sub-table Footer Bar (Directly below table, as in Caido) */
+.ape-subtable-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 28px;
+  padding: 0 12px;
+  background-color: var(--caido-bg-panel);
+  border-top: 1px solid var(--caido-border);
+  border-bottom: 1px solid var(--caido-border);
   color: var(--caido-text-muted);
+  font-size: 11px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.ape-subtable-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ape-subtable-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ape-btn-text {
+  background: transparent;
+  border: 1px solid var(--caido-border);
+  border-radius: 3px;
+  color: var(--caido-text-muted);
+  font-size: 11px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.ape-btn-text:hover {
+  background-color: var(--caido-bg-surface);
+  color: var(--caido-text-bright);
 }
 
 /* Splitter Divider */
@@ -443,124 +400,89 @@
   top: 1px;
   left: 50%;
   transform: translateX(-50%);
-  width: 32px;
+  width: 36px;
   height: 1px;
   background-color: var(--caido-border-strong);
 }
 
-/* Lower: Detail Pane */
+/* Bottom Split Pane: Side-by-Side Horizontal Layout (Request | Response) */
 .ape-detail-pane {
-  height: 220px;
+  height: 340px;
   background-color: var(--caido-bg-app);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   flex-shrink: 0;
   overflow: hidden;
 }
 
-.ape-detail-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 32px;
-  padding: 0 12px;
-  background-color: var(--caido-bg-panel);
-  border-bottom: 1px solid var(--caido-border);
-  font-size: 12px;
-  flex-shrink: 0;
-}
-
-.ape-badge {
-  padding: 1px 6px;
-  border-radius: 3px;
-  font-family: var(--caido-font-mono);
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-/* Method Badge (Blue for GET as requested) */
-.badge-get {
-  background-color: var(--caido-blue-dim);
-  color: var(--caido-blue);
-  border: 1px solid var(--caido-blue-border);
-}
-
-.badge-post {
-  background-color: var(--caido-orange-dim);
-  color: var(--caido-orange);
-  border: 1px solid var(--caido-orange-border);
-}
-
-.badge-status-200 {
-  background-color: var(--caido-green-dim);
-  color: var(--caido-green);
-  border: 1px solid var(--caido-green-border);
-}
-
-.badge-status-err {
-  background-color: var(--caido-red-dim);
-  color: var(--caido-red);
-  border: 1px solid var(--caido-red-border);
-}
-
-.badge-status-other {
-  background-color: var(--caido-bg-surface-elevated);
-  color: var(--caido-text-muted);
-  border: 1px solid var(--caido-border-strong);
-}
-
-.ape-detail-title {
-  font-family: var(--caido-font-mono);
-  color: var(--caido-text-bright);
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 450px;
-}
-
-.ape-detail-meta {
-  color: var(--caido-text-muted);
-  font-size: 11px;
-  font-family: var(--caido-font-mono);
-  margin-left: auto;
-  margin-right: 8px;
-}
-
-.ape-detail-content {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
-
-.ape-detail-column {
+.ape-pane-column {
   flex: 1;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   border-right: 1px solid var(--caido-border);
-  overflow: hidden;
+  position: relative;
 }
 
-.ape-detail-column:last-child {
+.ape-pane-column:last-child {
   border-right: none;
 }
 
-.ape-detail-column-header {
+/* Header inside Request & Response panels */
+.ape-pane-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 24px;
+  height: 32px;
   padding: 0 10px;
-  background-color: var(--caido-bg-surface);
+  background-color: var(--caido-bg-panel);
   border-bottom: 1px solid var(--caido-border);
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--caido-text-muted);
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
-/* Caido Authentic CodeMirror-style Syntax Highlighted Viewer */
-.caido-code-editor {
+.ape-pane-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--caido-text);
+  user-select: none;
+}
+
+/* Segmented Pill Toggle Buttons (Pretty | Raw | Preview) */
+.ape-toggle-group {
+  display: flex;
+  align-items: center;
+  background-color: var(--caido-bg-app);
+  border: 1px solid var(--caido-border);
+  border-radius: 4px;
+  padding: 1px;
+}
+
+.ape-toggle-btn {
+  background: transparent;
+  border: none;
+  color: var(--caido-text-muted);
+  font-size: 11px;
+  font-family: var(--caido-font-sans);
+  padding: 2px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.1s ease;
+}
+
+.ape-toggle-btn:hover {
+  color: var(--caido-text-bright);
+}
+
+.ape-toggle-btn.active {
+  background-color: var(--caido-bg-surface-hover);
+  color: var(--caido-text-bright);
+  font-weight: 500;
+}
+
+/* Caido Native Code Viewer / Editor */
+.ape-code-viewer {
   flex: 1;
   overflow: auto;
   padding: 6px 0;
@@ -568,26 +490,25 @@
   background-color: var(--caido-bg-app);
   font-family: var(--caido-font-mono);
   font-size: 12px;
-  line-height: 1.55;
+  line-height: 1.48;
   color: var(--caido-text);
   box-sizing: border-box;
 }
 
-.caido-editor-line {
+.caido-line {
   display: flex;
   align-items: baseline;
-  padding: 0 10px;
-  min-height: 19px;
-  transition: background-color 0.05s ease;
+  padding: 0 8px;
+  min-height: 18px;
 }
 
-.caido-editor-line:hover {
-  background-color: var(--caido-bg-hover);
+.caido-line:hover {
+  background-color: rgba(255, 255, 255, 0.02);
 }
 
 .caido-line-num {
   color: #5d626e;
-  width: 26px;
+  width: 28px;
   text-align: right;
   margin-right: 12px;
   user-select: none;
@@ -595,92 +516,92 @@
   font-size: 11px;
 }
 
-.caido-line-content {
+.caido-line-text {
   flex: 1;
   white-space: pre-wrap;
   word-break: break-all;
 }
 
-/* Syntax Token Colors (Matching Caido Screen 2) */
+/* Code Syntax Tokens */
 .hl-method {
   color: var(--caido-purple);
   font-weight: 600;
 }
 
-.hl-path {
-  color: var(--caido-text-bright);
+.hl-proto {
+  color: var(--caido-cyan);
 }
 
-.hl-proto {
-  color: var(--caido-blue);
+.hl-path {
+  color: var(--caido-green);
 }
 
 .hl-header-key {
   color: var(--caido-yellow);
-  font-weight: 500;
 }
 
 .hl-header-val {
-  color: var(--caido-text);
+  color: #edeae8;
 }
 
-.hl-payload-badge {
-  color: var(--caido-text-bright);
+.hl-status-200 {
+  color: var(--caido-green);
+  font-weight: 600;
+}
+
+.hl-status-err {
+  color: var(--caido-red);
+  font-weight: 600;
+}
+
+.hl-reason {
+  color: var(--caido-purple);
+}
+
+.hl-string {
+  color: var(--caido-green);
+}
+
+/* Highlighted Injected Payload within the HTTP Request */
+.hl-payload-match {
+  color: var(--caido-orange);
   background-color: var(--caido-accent-dim);
-  border: 1px solid rgba(240, 100, 47, 0.3);
-  padding: 1px 5px;
-  border-radius: 3px;
+  border: 1px solid rgba(240, 100, 47, 0.35);
+  border-radius: 2px;
+  padding: 0 3px;
   font-weight: 500;
 }
 
+/* Bottom Metrics Bar in Response Pane */
+.ape-pane-metric-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 22px;
+  padding: 0 10px;
+  background-color: var(--caido-bg-app);
+  border-top: 1px solid var(--caido-border-subtle);
+  color: var(--caido-text-muted);
+  font-family: var(--caido-font-mono);
+  font-size: 11px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+/* Empty Placeholder in Detail Pane */
 .ape-empty-detail {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: var(--caido-text-muted);
+  color: var(--caido-text-dim);
   gap: 8px;
+  font-family: var(--caido-font-sans);
 }
 
 .ape-empty-detail svg {
-  width: 38px;
-  height: 38px;
-  opacity: 0.25;
-}
-
-/* Bottom Status Bar */
-.ape-statusbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 24px;
-  padding: 0 12px;
-  background-color: var(--caido-bg-panel);
-  border-top: 1px solid var(--caido-border);
-  color: var(--caido-text-muted);
-  font-size: 11px;
-  flex-shrink: 0;
-}
-
-.ape-statusbar-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.ape-statusbar-right {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.ape-kbd {
-  background-color: var(--caido-bg-surface);
-  border: 1px solid var(--caido-border-strong);
-  border-radius: 3px;
-  padding: 1px 4px;
-  font-size: 10px;
-  font-family: var(--caido-font-mono);
-  color: var(--caido-text);
+  width: 32px;
+  height: 32px;
+  opacity: 0.3;
 }

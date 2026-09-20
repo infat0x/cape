@@ -77,14 +77,14 @@ export function init(sdk) {
                   }
                   request {
                     id
-                    host
-                    path
-                    query
-                    method
+                    createdAt
+                    raw
                     response {
+                      id
                       statusCode
                       length
                       roundtripTime
+                      raw
                     }
                   }
                 }
@@ -136,13 +136,12 @@ export function init(sdk) {
           id: Number(node.sequenceId),
           payload: primaryPayload,
           payloads: decodedList,
-          host: req?.host || "",
-          path: req?.path || "",
-          query: req?.query || "",
-          method: req?.method || "GET",
+          rawRequest: decodeBase64(req?.raw),
+          rawResponse: decodeBase64(resp?.raw),
           statusCode: resp?.statusCode ?? null,
           length: resp?.length ?? null,
-          roundtripTime: resp?.roundtripTime ?? null
+          roundtripTime: resp?.roundtripTime ?? null,
+          createdAt: req?.createdAt ?? null
         });
       }
 

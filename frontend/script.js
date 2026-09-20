@@ -1,6 +1,6 @@
 /**
  * Automate Payload Extractor - Frontend Plugin
- * High-density split-pane interface styled strictly after Caido's native UI.
+ * High-density UI strictly replicating Caido's native Automate Master-Detail layout.
  */
 
 export const init = (sdk) => {
@@ -80,15 +80,30 @@ function buildExtractorUI(sdk) {
   let rawRequests = [];
   let filteredRequests = [];
   let selectedItem = null;
-  let activeStatusFilter = "200";
+  let sortColumn = "id";
+  let sortDirection = "desc";
+  let reqMode = "pretty";
+  let respMode = "pretty";
 
   root.innerHTML = `
-    <!-- Top Bar -->
+    <!-- Top Bar (Single compact toolbar matching Caido style) -->
     <div class="ape-toolbar">
       <div class="ape-control-item">
         <label class="ape-label" for="ape-run-select">Run:</label>
-        <select id="ape-run-select" class="ape-select">
+        <select id="ape-run-select" class="ape-select" style="min-width: 190px;">
           <option value="">Loading attack runs...</option>
+        </select>
+      </div>
+
+      <div class="ape-control-item">
+        <label class="ape-label" for="ape-status-select">Status:</label>
+        <select id="ape-status-select" class="ape-select" style="min-width: 90px;">
+          <option value="all">All</option>
+          <option value="200" selected>200 OK</option>
+          <option value="2xx">2XX</option>
+          <option value="3xx">3XX</option>
+          <option value="4xx">4XX</option>
+          <option value="5xx">5XX</option>
         </select>
       </div>
 
@@ -109,96 +124,129 @@ function buildExtractorUI(sdk) {
         <span>Export .txt</span>
       </button>
 
-      <button id="ape-refresh-btn" class="ape-btn ape-btn-secondary ape-btn-icon" title="Refresh runs">
+      <label class="ape-checkbox-chip" title="Remove duplicate payload values">
+        <input type="checkbox" id="ape-dedupe-toggle" checked />
+        <span>Deduplicate</span>
+      </label>
+
+      <button id="ape-refresh-btn" class="ape-btn ape-btn-secondary ape-btn-icon" title="Refresh attack runs">
         <i class="fas fa-sync-alt"></i>
       </button>
     </div>
 
-    <!-- Applied Filters Bar -->
-    <div class="ape-filters-bar">
-      <span class="ape-filters-label">Status:</span>
-      <button class="ape-filter-chip" data-status="all">All</button>
-      <button class="ape-filter-chip chip-200 active" data-status="200">200 OK</button>
-      <button class="ape-filter-chip chip-200" data-status="2xx">2XX</button>
-      <button class="ape-filter-chip chip-3xx" data-status="3xx">3XX</button>
-      <button class="ape-filter-chip chip-4xx" data-status="4xx">4XX</button>
-      <button class="ape-filter-chip chip-4xx" data-status="5xx">5XX</button>
-
-      <div class="ape-filter-sep"></div>
-
-      <label class="ape-checkbox-chip">
-        <input type="checkbox" id="ape-dedupe-toggle" checked />
-        <span>Deduplicate</span>
-      </label>
-    </div>
-
-    <!-- Master-Detail Workspace -->
+    <!-- Workspace -->
     <div class="ape-workspace">
-      <!-- Upper: Payloads Table -->
-      <div class="ape-table-pane" id="ape-table-pane">
+      <!-- Upper: Payloads Table (Exact 6 columns as Caido Automate) -->
+      <div class="ape-table-pane" id="ape-table-pane" tabindex="0">
         <table class="ape-table">
           <thead>
             <tr>
-              <th class="col-id">ID</th>
-              <th class="col-method">Method</th>
-              <th class="col-path">Path & Query</th>
-              <th class="col-payload">Payload</th>
-              <th class="col-status">Status</th>
-              <th class="col-length">Length</th>
-              <th class="col-time">Response Time (ms)</th>
-              <th class="col-action">Copy</th>
+              <th class="col-id" data-col="id">ID <span id="sort-arrow-id">▼</span></th>
+              <th class="col-payload" data-col="payload">Payload 1 <span id="sort-arrow-payload"></span></th>
+              <th class="col-status" data-col="status">Status <span id="sort-arrow-status"></span></th>
+              <th class="col-length" data-col="length">Length <span id="sort-arrow-length"></span></th>
+              <th class="col-time" data-col="time">Round-trip Time (ms) <span id="sort-arrow-time"></span></th>
+              <th class="col-sent" data-col="sent">Request Sent At <span id="sort-arrow-sent"></span></th>
+              <th class="col-filler"></th>
             </tr>
           </thead>
           <tbody id="ape-table-body">
             <tr>
-              <td colspan="8" class="ape-empty-message">Loading attack runs...</td>
+              <td colspan="7" class="ape-empty-message">Loading attack runs...</td>
             </tr>
           </tbody>
         </table>
       </div>
 
+      <!-- Sub-table Bar (Right above split pane, as in Caido) -->
+      <div class="ape-subtable-bar">
+        <div class="ape-subtable-left">
+          <span id="ape-req-count">0 requests</span>
+          <span style="opacity: 0.35;">|</span>
+          <span id="ape-unique-count">0 unique payloads</span>
+        </div>
+        <div class="ape-subtable-right">
+          <button id="ape-reset-btn" class="ape-btn-text" title="Reset filters to 200 OK">Reset preference</button>
+        </div>
+      </div>
+
       <!-- Resizable Splitter Divider -->
       <div class="ape-splitter" id="ape-splitter" title="Drag to resize detail pane"></div>
 
-      <!-- Lower: Master-Detail Inspector Pane -->
+      <!-- Lower: Side-by-Side Request & Response Panels -->
       <div class="ape-detail-pane" id="ape-detail-pane">
-        <div id="ape-detail-inner" style="height: 100%; display: flex; flex-direction: column;">
-          <div class="ape-empty-detail">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 0h6"/>
-            </svg>
-            <span style="font-size: 13px; font-weight: 500;">No payload selected</span>
-            <span style="font-size: 11px; color: var(--caido-text-dim);">Select a request from the table above to inspect details.</span>
+        <!-- Left: Request Panel -->
+        <div class="ape-pane-column" id="ape-req-column">
+          <div class="ape-pane-header">
+            <span class="ape-pane-title">Request</span>
+            <div class="ape-toggle-group" id="ape-req-toggle-group">
+              <button class="ape-toggle-btn active" data-mode="pretty">Pretty</button>
+              <button class="ape-toggle-btn" data-mode="raw">Raw</button>
+            </div>
+          </div>
+          <div class="ape-code-viewer" id="ape-req-viewer">
+            <div class="ape-empty-detail">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 0h6"/>
+              </svg>
+              <span>Select a request to inspect</span>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Bottom Status Bar -->
-    <div class="ape-statusbar">
-      <div class="ape-statusbar-left" id="ape-status-text">
-        <span>0 requests</span>
-      </div>
-      <div class="ape-statusbar-right">
-        <span><kbd class="ape-kbd">Ctrl</kbd> + <kbd class="ape-kbd">Shift</kbd> + <kbd class="ape-kbd">C</kbd> quick copy 200 OK</span>
+        <!-- Right: Response Panel -->
+        <div class="ape-pane-column" id="ape-resp-column">
+          <div class="ape-pane-header">
+            <span class="ape-pane-title">Response</span>
+            <div class="ape-toggle-group" id="ape-resp-toggle-group">
+              <button class="ape-toggle-btn active" data-mode="pretty">Pretty</button>
+              <button class="ape-toggle-btn" data-mode="raw">Raw</button>
+              <button class="ape-toggle-btn" data-mode="preview">Preview</button>
+            </div>
+          </div>
+          <div class="ape-code-viewer" id="ape-resp-viewer">
+            <div class="ape-empty-detail">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 0h6"/>
+              </svg>
+              <span>No response selected</span>
+            </div>
+          </div>
+          <div class="ape-pane-metric-bar" id="ape-resp-metric">
+            0 bytes | 0ms
+          </div>
+        </div>
       </div>
     </div>
   `;
 
   const runSelect = root.querySelector("#ape-run-select");
+  const statusSelect = root.querySelector("#ape-status-select");
   const searchInput = root.querySelector("#ape-search-input");
   const dedupeToggle = root.querySelector("#ape-dedupe-toggle");
   const copyBtn = root.querySelector("#ape-copy-btn");
   const exportBtn = root.querySelector("#ape-export-btn");
   const refreshBtn = root.querySelector("#ape-refresh-btn");
+  const resetBtn = root.querySelector("#ape-reset-btn");
+
+  const tablePane = root.querySelector("#ape-table-pane");
   const tableBody = root.querySelector("#ape-table-body");
-  const statusText = root.querySelector("#ape-status-text");
-  const detailInner = root.querySelector("#ape-detail-inner");
+  const reqCountEl = root.querySelector("#ape-req-count");
+  const uniqueCountEl = root.querySelector("#ape-unique-count");
+
   const splitter = root.querySelector("#ape-splitter");
   const detailPane = root.querySelector("#ape-detail-pane");
-  const filterChips = root.querySelectorAll(".ape-filter-chip");
 
-  // Load runs
+  const reqViewer = root.querySelector("#ape-req-viewer");
+  const respViewer = root.querySelector("#ape-resp-viewer");
+  const respMetric = root.querySelector("#ape-resp-metric");
+
+  const reqToggleBtns = root.querySelectorAll("#ape-req-toggle-group .ape-toggle-btn");
+  const respToggleBtns = root.querySelectorAll("#ape-resp-toggle-group .ape-toggle-btn");
+
+  const sortHeaders = root.querySelectorAll(".ape-table th[data-col]");
+
+  // Load available attack runs
   const loadRuns = async () => {
     runSelect.innerHTML = `<option value="">Loading attack runs...</option>`;
     setTableMessage("Loading attack runs...");
@@ -216,8 +264,8 @@ function buildExtractorUI(sdk) {
       if (!runs || runs.length === 0) {
         runSelect.innerHTML = `<option value="">(No Automate runs found)</option>`;
         setTableMessage("No Automate attack runs found in this project.");
-        updateStatusBar(0, 0, 0);
-        renderEmptyDetail();
+        updateCounts(0, 0, 0);
+        renderEmptyDetails();
         return;
       }
 
@@ -243,8 +291,8 @@ function buildExtractorUI(sdk) {
     rawRequests = [];
     filteredRequests = [];
     selectedItem = null;
-    renderEmptyDetail();
-    updateStatusBar(0, 0, 0);
+    renderEmptyDetails();
+    updateCounts(0, 0, 0);
 
     try {
       const items = await sdk.backend.getRunPayloads(runId);
@@ -261,22 +309,25 @@ function buildExtractorUI(sdk) {
 
   const applyFiltersAndRender = () => {
     const filterQuery = (searchInput.value || "").toLowerCase().trim();
+    const activeStatus = statusSelect.value;
     const shouldDedupe = dedupeToggle.checked;
 
     let list = rawRequests.filter((item) => {
       const code = item.statusCode;
 
-      if (activeStatusFilter === "200" && code !== 200) return false;
-      if (activeStatusFilter === "2xx" && (code < 200 || code >= 300)) return false;
-      if (activeStatusFilter === "3xx" && (code < 300 || code >= 400)) return false;
-      if (activeStatusFilter === "4xx" && (code < 400 || code >= 500)) return false;
-      if (activeStatusFilter === "5xx" && (code < 500 || code >= 600)) return false;
+      if (activeStatus === "200" && code !== 200) return false;
+      if (activeStatus === "2xx" && (code < 200 || code >= 300)) return false;
+      if (activeStatus === "3xx" && (code < 300 || code >= 400)) return false;
+      if (activeStatus === "4xx" && (code < 400 || code >= 500)) return false;
+      if (activeStatus === "5xx" && (code < 500 || code >= 600)) return false;
 
       if (filterQuery) {
         const matchPayload = item.payload && item.payload.toLowerCase().includes(filterQuery);
-        const matchPath = item.path && item.path.toLowerCase().includes(filterQuery);
-        const matchQuery = item.query && item.query.toLowerCase().includes(filterQuery);
-        if (!matchPayload && !matchPath && !matchQuery) {
+        const matchReq = item.rawRequest && item.rawRequest.toLowerCase().includes(filterQuery);
+        const matchResp = item.rawResponse && item.rawResponse.toLowerCase().includes(filterQuery);
+        const matchId = String(item.id).includes(filterQuery);
+        const matchStatus = String(item.statusCode).includes(filterQuery);
+        if (!matchPayload && !matchReq && !matchResp && !matchId && !matchStatus) {
           return false;
         }
       }
@@ -293,9 +344,38 @@ function buildExtractorUI(sdk) {
       });
     }
 
+    // Sort list
+    list.sort((a, b) => {
+      let valA = a[sortColumn];
+      let valB = b[sortColumn];
+
+      if (sortColumn === "sent") {
+        valA = Number(a.createdAt || 0);
+        valB = Number(b.createdAt || 0);
+      } else if (sortColumn === "time") {
+        valA = Number(a.roundtripTime || 0);
+        valB = Number(b.roundtripTime || 0);
+      } else if (sortColumn === "status") {
+        valA = Number(a.statusCode || 0);
+        valB = Number(b.statusCode || 0);
+      } else if (sortColumn === "length") {
+        valA = Number(a.length || 0);
+        valB = Number(b.length || 0);
+      } else if (sortColumn === "id") {
+        valA = Number(a.id || 0);
+        valB = Number(b.id || 0);
+      } else if (typeof valA === "string") {
+        return sortDirection === "asc"
+          ? valA.localeCompare(valB)
+          : valB.localeCompare(valA);
+      }
+
+      return sortDirection === "asc" ? valA - valB : valB - valA;
+    });
+
     filteredRequests = list;
     const uniqueCount = new Set(filteredRequests.map((r) => r.payload)).size;
-    updateStatusBar(rawRequests.length, filteredRequests.length, uniqueCount);
+    updateCounts(rawRequests.length, filteredRequests.length, uniqueCount);
     renderTableRows(filteredRequests);
 
     if (selectedItem && !filteredRequests.some((r) => r.id === selectedItem.id)) {
@@ -303,7 +383,7 @@ function buildExtractorUI(sdk) {
         selectItem(filteredRequests[0]);
       } else {
         selectedItem = null;
-        renderEmptyDetail();
+        renderEmptyDetails();
       }
     }
   };
@@ -320,30 +400,25 @@ function buildExtractorUI(sdk) {
 
     items.forEach((item) => {
       const tr = document.createElement("tr");
+      tr.setAttribute("data-id", item.id);
       if (selectedItem && selectedItem.id === item.id) {
         tr.classList.add("ape-selected-row");
       }
 
-      const methodClass = item.method === "POST" ? "method-post" : "method-get";
       const statusClass = getStatusClass(item.statusCode);
       const statusLabel = item.statusCode != null ? item.statusCode : "-";
       const lengthLabel = item.length != null ? item.length : "-";
       const timeLabel = item.roundtripTime != null ? item.roundtripTime : "-";
-      const fullPath = item.path + (item.query ? `?${item.query}` : "");
+      const sentLabel = formatTimestamp(item.createdAt);
 
       tr.innerHTML = `
         <td class="col-id">${item.id}</td>
-        <td class="col-method ${methodClass}">${escapeHtml(item.method)}</td>
-        <td class="col-path" title="${escapeHtml(fullPath)}">${escapeHtml(fullPath)}</td>
         <td class="col-payload" title="${escapeHtml(item.payload)}">${escapeHtml(item.payload)}</td>
         <td class="col-status ${statusClass}">${statusLabel}</td>
         <td class="col-length">${lengthLabel}</td>
         <td class="col-time">${timeLabel}</td>
-        <td class="col-action">
-          <button class="ape-row-copy-btn" title="Copy payload">
-            <i class="fas fa-copy"></i>
-          </button>
-        </td>
+        <td class="col-sent">${sentLabel}</td>
+        <td class="col-filler"></td>
       `;
 
       tr.addEventListener("click", () => {
@@ -351,13 +426,6 @@ function buildExtractorUI(sdk) {
       });
 
       tr.addEventListener("dblclick", async () => {
-        await navigator.clipboard.writeText(item.payload);
-        showToast(sdk, `Copied "${item.payload}" to clipboard.`, "success");
-      });
-
-      const copyIconBtn = tr.querySelector(".ape-row-copy-btn");
-      copyIconBtn.addEventListener("click", async (e) => {
-        e.stopPropagation();
         await navigator.clipboard.writeText(item.payload);
         showToast(sdk, `Copied "${item.payload}" to clipboard.`, "success");
       });
@@ -372,142 +440,167 @@ function buildExtractorUI(sdk) {
     selectedItem = item;
 
     const rows = tableBody.querySelectorAll("tr");
-    rows.forEach((r, idx) => {
-      if (filteredRequests[idx] && filteredRequests[idx].id === item.id) {
+    rows.forEach((r) => {
+      const rowId = Number(r.getAttribute("data-id"));
+      if (rowId === item.id) {
         r.classList.add("ape-selected-row");
       } else {
         r.classList.remove("ape-selected-row");
       }
     });
 
-    renderDetailView(item);
+    renderPanels(item);
   };
 
-  const renderDetailView = (item) => {
-    const isPost = item.method === "POST";
-    const methodBadgeClass = isPost ? "badge-post" : "badge-get";
-    const is200 = item.statusCode === 200;
-    const isErr = item.statusCode >= 400;
-    const statusBadgeClass = is200 ? "badge-status-200" : (isErr ? "badge-status-err" : "badge-status-other");
-    const statusLabel = item.statusCode != null ? `${item.statusCode}` : "-";
-    const fullPath = item.path + (item.query ? `?${item.query}` : "");
-    const hostHeader = item.host || "target";
+  const renderPanels = (item) => {
+    if (!item) {
+      renderEmptyDetails();
+      return;
+    }
 
-    const httpRequestRaw = `${item.method} ${fullPath} HTTP/1.1\nHost: ${hostHeader}\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)\nAccept: */*\nConnection: close`;
+    // Render Request
+    if (reqMode === "pretty") {
+      reqViewer.innerHTML = formatHighlightedRequest(item.rawRequest, item.payload);
+    } else {
+      reqViewer.innerHTML = formatRawCode(item.rawRequest);
+    }
 
-    const payloadHtml = formatHighlightedPayload(item.payload);
-    const requestHtml = formatHighlightedHttpRequest(
-      item.method,
-      item.path,
-      item.query,
-      hostHeader,
-      item.statusCode,
-      item.length,
-      item.roundtripTime
-    );
+    // Render Response
+    if (respMode === "pretty") {
+      respViewer.innerHTML = formatHighlightedResponse(item.rawResponse);
+    } else if (respMode === "raw") {
+      respViewer.innerHTML = formatRawCode(item.rawResponse);
+    } else {
+      // Preview mode (if HTML, show iframe or clean formatted view)
+      respViewer.innerHTML = formatPreviewResponse(item.rawResponse);
+    }
 
-    detailInner.innerHTML = `
-      <div class="ape-detail-header">
-        <span class="ape-badge ${methodBadgeClass}">${escapeHtml(item.method)}</span>
-        <span class="ape-badge ${statusBadgeClass}">${escapeHtml(statusLabel)}</span>
-        <span class="ape-detail-title" title="ID: ${item.id} - ${escapeHtml(item.payload)}">
-          ID: ${item.id} &bull; ${escapeHtml(item.payload)}
-        </span>
-
-        <span class="ape-detail-meta">
-          ${item.length != null ? item.length + " bytes" : ""} ${item.roundtripTime != null ? " &bull; " + item.roundtripTime + "ms" : ""}
-        </span>
-
-        <button id="ape-copy-single-payload" class="ape-btn ape-btn-secondary" style="height: 22px; font-size: 11px; padding: 0 7px;" title="Copy payload value">
-          <i class="fas fa-copy"></i>
-          <span>Copy Payload</span>
-        </button>
-
-        <button id="ape-copy-single-request" class="ape-btn ape-btn-secondary" style="height: 22px; font-size: 11px; padding: 0 7px;" title="Copy reconstructed HTTP request">
-          <i class="fas fa-file-code"></i>
-          <span>Copy Request</span>
-        </button>
-      </div>
-
-      <div class="ape-detail-content">
-        <!-- Column 1: Payload Inspector -->
-        <div class="ape-detail-column">
-          <div class="ape-detail-column-header">
-            <span>Extracted Payload (${item.payload.length} chars)</span>
-            <span style="font-size: 10px; font-family: var(--caido-font-mono); opacity: 0.6;">UTF-8</span>
-          </div>
-          ${payloadHtml}
-        </div>
-
-        <!-- Column 2: Reconstructed HTTP Request Preview -->
-        <div class="ape-detail-column">
-          <div class="ape-detail-column-header">
-            <span>HTTP Request Preview</span>
-            <span style="font-size: 10px; font-family: var(--caido-font-mono); opacity: 0.6;">${escapeHtml(item.method)}</span>
-          </div>
-          ${requestHtml}
-        </div>
-      </div>
-    `;
-
-    detailInner.querySelector("#ape-copy-single-payload").addEventListener("click", async () => {
-      await navigator.clipboard.writeText(item.payload);
-      showToast(sdk, `Copied "${item.payload}" to clipboard.`, "success");
-    });
-
-    detailInner.querySelector("#ape-copy-single-request").addEventListener("click", async () => {
-      await navigator.clipboard.writeText(httpRequestRaw);
-      showToast(sdk, "Copied HTTP request to clipboard.", "success");
-    });
+    // Metrics bar
+    const len = item.length != null ? `${item.length} bytes` : "-";
+    const rtt = item.roundtripTime != null ? `${item.roundtripTime}ms` : "-";
+    respMetric.textContent = `${len} | ${rtt}`;
   };
 
-  const renderEmptyDetail = () => {
-    detailInner.innerHTML = `
+  const renderEmptyDetails = () => {
+    reqViewer.innerHTML = `
       <div class="ape-empty-detail">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 0h6"/>
         </svg>
-        <span style="font-size: 13px; font-weight: 500;">No payload selected</span>
-        <span style="font-size: 11px; color: var(--caido-text-dim);">Select a request from the table above to inspect details.</span>
+        <span>No request selected</span>
       </div>
     `;
+    respViewer.innerHTML = `
+      <div class="ape-empty-detail">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 0h6"/>
+        </svg>
+        <span>No response selected</span>
+      </div>
+    `;
+    respMetric.textContent = "0 bytes | 0ms";
   };
 
   const setTableMessage = (msg) => {
     tableBody.innerHTML = `
       <tr>
-        <td colspan="8" class="ape-empty-message">${escapeHtml(msg)}</td>
+        <td colspan="7" class="ape-empty-message">${escapeHtml(msg)}</td>
       </tr>
     `;
   };
 
-  const updateStatusBar = (total, filtered, unique) => {
+  const updateCounts = (total, filtered, unique) => {
     if (total === 0) {
-      statusText.innerHTML = `<span>0 requests</span>`;
+      reqCountEl.textContent = "0 requests";
+      uniqueCountEl.textContent = "0 unique payloads";
       return;
     }
 
-    statusText.innerHTML = `
-      <span>${filtered} requests (filtered from ${total})</span>
-      <span style="opacity: 0.4;">|</span>
-      <span>${unique} unique payloads</span>
-    `;
+    if (total === filtered) {
+      reqCountEl.textContent = `${total} requests`;
+    } else {
+      reqCountEl.textContent = `${filtered} requests (filtered from ${total})`;
+    }
+    uniqueCountEl.textContent = `${unique} unique payloads`;
   };
 
-  // Filter chips click handling
-  filterChips.forEach((chip) => {
-    chip.addEventListener("click", () => {
-      filterChips.forEach((c) => c.classList.remove("active"));
-      chip.classList.add("active");
-      activeStatusFilter = chip.getAttribute("data-status");
+  // Sort click handling
+  sortHeaders.forEach((th) => {
+    th.addEventListener("click", () => {
+      const col = th.getAttribute("data-col");
+      if (sortColumn === col) {
+        sortDirection = sortDirection === "asc" ? "desc" : "asc";
+      } else {
+        sortColumn = col;
+        sortDirection = col === "id" ? "desc" : "asc";
+      }
+
+      // Update arrows
+      ["id", "payload", "status", "length", "time", "sent"].forEach((c) => {
+        const arrowEl = root.querySelector(`#sort-arrow-${c}`);
+        if (arrowEl) {
+          if (c === sortColumn) {
+            arrowEl.textContent = sortDirection === "asc" ? "▲" : "▼";
+          } else {
+            arrowEl.textContent = "";
+          }
+        }
+      });
+
       applyFiltersAndRender();
     });
   });
 
-  // Splitter drag to resize
+  // Mode toggles
+  reqToggleBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      reqToggleBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      reqMode = btn.getAttribute("data-mode");
+      if (selectedItem) renderPanels(selectedItem);
+    });
+  });
+
+  respToggleBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      respToggleBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      respMode = btn.getAttribute("data-mode");
+      if (selectedItem) renderPanels(selectedItem);
+    });
+  });
+
+  // Keyboard navigation (ArrowUp / ArrowDown)
+  tablePane.addEventListener("keydown", (e) => {
+    if (!selectedItem || filteredRequests.length === 0) return;
+
+    const currentIndex = filteredRequests.findIndex((r) => r.id === selectedItem.id);
+    if (currentIndex === -1) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const nextIndex = Math.min(filteredRequests.length - 1, currentIndex + 1);
+      selectItem(filteredRequests[nextIndex]);
+      scrollRowIntoView(filteredRequests[nextIndex].id);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const prevIndex = Math.max(0, currentIndex - 1);
+      selectItem(filteredRequests[prevIndex]);
+      scrollRowIntoView(filteredRequests[prevIndex].id);
+    }
+  });
+
+  const scrollRowIntoView = (id) => {
+    const row = tableBody.querySelector(`tr[data-id="${id}"]`);
+    if (row) {
+      row.scrollIntoView({ block: "nearest" });
+    }
+  };
+
+  // Splitter drag
   let isDragging = false;
   let startY = 0;
-  let startHeight = 220;
+  let startHeight = 340;
 
   splitter.addEventListener("mousedown", (e) => {
     isDragging = true;
@@ -520,7 +613,7 @@ function buildExtractorUI(sdk) {
   document.addEventListener("mousemove", (e) => {
     if (!isDragging) return;
     const deltaY = startY - e.clientY;
-    const newHeight = Math.max(80, Math.min(600, startHeight + deltaY));
+    const newHeight = Math.max(100, Math.min(750, startHeight + deltaY));
     detailPane.style.height = `${newHeight}px`;
   });
 
@@ -539,9 +632,17 @@ function buildExtractorUI(sdk) {
     }
   });
 
+  statusSelect.addEventListener("change", applyFiltersAndRender);
   searchInput.addEventListener("input", applyFiltersAndRender);
   dedupeToggle.addEventListener("change", applyFiltersAndRender);
   refreshBtn.addEventListener("click", loadRuns);
+
+  resetBtn.addEventListener("click", () => {
+    statusSelect.value = "200";
+    searchInput.value = "";
+    dedupeToggle.checked = true;
+    applyFiltersAndRender();
+  });
 
   copyBtn.addEventListener("click", async () => {
     if (filteredRequests.length === 0) {
@@ -579,11 +680,24 @@ function buildExtractorUI(sdk) {
 
 function getStatusClass(code) {
   if (code == null) return "status-none";
-  if (code === 200) return "status-200";
+  if (code >= 200 && code < 300) return "status-200";
   if (code >= 300 && code < 400) return "status-300";
-  if (code >= 400 && code < 500) return "status-400";
-  if (code >= 500) return "status-500";
+  if (code >= 400 && code < 600) return "status-400";
   return "status-none";
+}
+
+function formatTimestamp(ts) {
+  if (!ts) return "-";
+  const d = new Date(Number(ts));
+  if (isNaN(d.getTime())) return String(ts);
+  const pad = (n) => String(n).padStart(2, "0");
+  const YYYY = d.getFullYear();
+  const MM = pad(d.getMonth() + 1);
+  const DD = pad(d.getDate());
+  const hh = pad(d.getHours());
+  const mm = pad(d.getMinutes());
+  const ss = pad(d.getSeconds());
+  return `${YYYY}-${MM}-${DD} ${hh}:${mm}:${ss}`;
 }
 
 function showToast(sdk, message, variant = "info") {
@@ -603,83 +717,183 @@ function escapeHtml(str) {
     .replace(/'/g, "&#039;");
 }
 
-function formatHighlightedPayload(payload) {
-  const lines = String(payload).split("\n");
-  let html = `<div class="caido-code-editor">`;
-  lines.forEach((line, idx) => {
-    const lineNum = idx + 1;
-    html += `
-      <div class="caido-editor-line">
-        <span class="caido-line-num">${lineNum}</span>
-        <span class="caido-line-content">
-          <span class="hl-payload-badge">${escapeHtml(line)}</span>
-        </span>
-      </div>`;
-  });
-  html += `</div>`;
-  return html;
-}
-
-function formatHighlightedHttpRequest(method, path, query, host, statusCode, length, time) {
-  const fullPath = path + (query ? `?${query}` : "");
-  const lines = [
-    { type: "req", method: method || "GET", path: fullPath || "/", proto: "HTTP/1.1" },
-    { type: "header", key: "Host", val: host || "target" },
-    { type: "header", key: "User-Agent", val: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
-    { type: "header", key: "Accept", val: "*/*" },
-    { type: "header", key: "Connection", val: "close" }
-  ];
-
-  if (statusCode != null) {
-    lines.push({ type: "separator" });
-    lines.push({ type: "resp", proto: "HTTP/1.1", status: statusCode, phrase: statusCode === 200 ? "OK" : "" });
-    if (length != null) {
-      lines.push({ type: "header", key: "Content-Length", val: String(length) });
-    }
-    if (time != null) {
-      lines.push({ type: "header", key: "Response-Time", val: `${time}ms` });
-    }
+function formatRawCode(text) {
+  if (!text) {
+    return `<div class="caido-line"><span class="caido-line-num">1</span><span class="caido-line-text" style="color: var(--caido-text-dim);">(Empty)</span></div>`;
   }
 
-  let html = `<div class="caido-code-editor">`;
-  let lineCounter = 1;
-
-  lines.forEach((line) => {
-    if (line.type === "req") {
-      html += `
-        <div class="caido-editor-line">
-          <span class="caido-line-num">${lineCounter++}</span>
-          <span class="caido-line-content">
-            <span class="hl-method">${escapeHtml(line.method)}</span> <span class="hl-path">${escapeHtml(line.path)}</span> <span class="hl-proto">${escapeHtml(line.proto)}</span>
-          </span>
-        </div>`;
-    } else if (line.type === "header") {
-      html += `
-        <div class="caido-editor-line">
-          <span class="caido-line-num">${lineCounter++}</span>
-          <span class="caido-line-content">
-            <span class="hl-header-key">${escapeHtml(line.key)}:</span> <span class="hl-header-val">${escapeHtml(line.val)}</span>
-          </span>
-        </div>`;
-    } else if (line.type === "separator") {
-      html += `
-        <div class="caido-editor-line">
-          <span class="caido-line-num">${lineCounter++}</span>
-          <span class="caido-line-content"></span>
-        </div>`;
-    } else if (line.type === "resp") {
-      const statusColorClass = line.status === 200 ? "status-200" : (line.status >= 400 ? "status-400" : "status-300");
-      html += `
-        <div class="caido-editor-line">
-          <span class="caido-line-num">${lineCounter++}</span>
-          <span class="caido-line-content">
-            <span class="hl-proto">${escapeHtml(line.proto)}</span> <span class="${statusColorClass}" style="font-weight: 600;">${escapeHtml(String(line.status))}</span> <span class="hl-method">${escapeHtml(line.phrase)}</span>
-          </span>
-        </div>`;
-    }
-  });
-
-  html += `</div>`;
-  return html;
+  const lines = String(text).split(/\r?\n/);
+  return lines
+    .map((line, idx) => {
+      const lineNum = idx + 1;
+      return `<div class="caido-line"><span class="caido-line-num">${lineNum}</span><span class="caido-line-text">${escapeHtml(line)}</span></div>`;
+    })
+    .join("");
 }
 
+function formatHighlightedRequest(rawRequest, payload) {
+  if (!rawRequest) {
+    return `<div class="caido-line"><span class="caido-line-num">1</span><span class="caido-line-text" style="color: var(--caido-text-dim);">(No raw request available)</span></div>`;
+  }
+
+  const lines = String(rawRequest).split(/\r?\n/);
+  let isHeaders = true;
+  const escapedPayload = payload ? escapeHtml(payload) : "";
+
+  return lines
+    .map((line, idx) => {
+      const lineNum = idx + 1;
+
+      if (line.trim() === "") {
+        isHeaders = false;
+        return `<div class="caido-line"><span class="caido-line-num">${lineNum}</span><span class="caido-line-text"></span></div>`;
+      }
+
+      // Line 1: Request line (e.g. GET /?search=<video> HTTP/1.1)
+      if (idx === 0) {
+        const parts = line.split(" ");
+        const method = parts[0] || "GET";
+        const proto = parts.length > 2 ? parts[parts.length - 1] : "HTTP/1.1";
+        const pathAndQuery = parts.slice(1, parts.length > 2 ? -1 : undefined).join(" ");
+
+        let highlightedPath = escapeHtml(pathAndQuery);
+        if (escapedPayload && highlightedPath.includes(escapedPayload)) {
+          highlightedPath = highlightedPath.split(escapedPayload).join(`<span class="hl-payload-match">${escapedPayload}</span>`);
+        }
+
+        return `
+          <div class="caido-line">
+            <span class="caido-line-num">${lineNum}</span>
+            <span class="caido-line-text"><span class="hl-method">${escapeHtml(method)}</span> <span class="hl-path">${highlightedPath}</span> <span class="hl-proto">${escapeHtml(proto)}</span></span>
+          </div>
+        `;
+      }
+
+      // Headers (e.g. Host: example.com)
+      if (isHeaders) {
+        const colonIndex = line.indexOf(":");
+        if (colonIndex !== -1) {
+          const key = line.slice(0, colonIndex);
+          const val = line.slice(colonIndex + 1);
+
+          let highlightedVal = escapeHtml(val);
+          if (escapedPayload && highlightedVal.includes(escapedPayload)) {
+            highlightedVal = highlightedVal.split(escapedPayload).join(`<span class="hl-payload-match">${escapedPayload}</span>`);
+          }
+
+          return `
+            <div class="caido-line">
+              <span class="caido-line-num">${lineNum}</span>
+              <span class="caido-line-text"><span class="hl-header-key">${escapeHtml(key)}:</span><span class="hl-header-val">${highlightedVal}</span></span>
+            </div>
+          `;
+        }
+      }
+
+      // Body line
+      let highlightedBody = escapeHtml(line);
+      if (escapedPayload && highlightedBody.includes(escapedPayload)) {
+        highlightedBody = highlightedBody.split(escapedPayload).join(`<span class="hl-payload-match">${escapedPayload}</span>`);
+      }
+
+      return `
+        <div class="caido-line">
+          <span class="caido-line-num">${lineNum}</span>
+          <span class="caido-line-text">${highlightedBody}</span>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function formatHighlightedResponse(rawResponse) {
+  if (!rawResponse) {
+    return `<div class="caido-line"><span class="caido-line-num">1</span><span class="caido-line-text" style="color: var(--caido-text-dim);">(No raw response available)</span></div>`;
+  }
+
+  const lines = String(rawResponse).split(/\r?\n/);
+  let isHeaders = true;
+
+  return lines
+    .map((line, idx) => {
+      const lineNum = idx + 1;
+
+      if (line.trim() === "") {
+        isHeaders = false;
+        return `<div class="caido-line"><span class="caido-line-num">${lineNum}</span><span class="caido-line-text"></span></div>`;
+      }
+
+      // Line 1: Status line (e.g. HTTP/1.1 200 OK or HTTP/1.1 400 Bad Request)
+      if (idx === 0) {
+        const parts = line.split(" ");
+        const proto = parts[0] || "HTTP/1.1";
+        const codeStr = parts[1] || "";
+        const codeNum = parseInt(codeStr, 10);
+        const reason = parts.slice(2).join(" ");
+
+        const statusClass = (codeNum >= 200 && codeNum < 300) ? "hl-status-200" : "hl-status-err";
+
+        return `
+          <div class="caido-line">
+            <span class="caido-line-num">${lineNum}</span>
+            <span class="caido-line-text"><span class="hl-proto">${escapeHtml(proto)}</span> <span class="${statusClass}">${escapeHtml(codeStr)}</span> <span class="hl-reason">${escapeHtml(reason)}</span></span>
+          </div>
+        `;
+      }
+
+      // Headers (e.g. Content-Type: application/json)
+      if (isHeaders) {
+        const colonIndex = line.indexOf(":");
+        if (colonIndex !== -1) {
+          const key = line.slice(0, colonIndex);
+          const val = line.slice(colonIndex + 1);
+
+          return `
+            <div class="caido-line">
+              <span class="caido-line-num">${lineNum}</span>
+              <span class="caido-line-text"><span class="hl-header-key">${escapeHtml(key)}:</span><span class="hl-header-val">${escapeHtml(val)}</span></span>
+            </div>
+          `;
+        }
+      }
+
+      // Response Body line (strings / text)
+      let bodyText = escapeHtml(line);
+      return `
+        <div class="caido-line">
+          <span class="caido-line-num">${lineNum}</span>
+          <span class="caido-line-text">${bodyText}</span>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function formatPreviewResponse(rawResponse) {
+  if (!rawResponse) {
+    return `<div class="caido-line"><span class="caido-line-num">1</span><span class="caido-line-text">(No response to preview)</span></div>`;
+  }
+
+  const doubleBreak = rawResponse.indexOf("\r\n\r\n");
+  const singleBreak = rawResponse.indexOf("\n\n");
+  let bodyStart = -1;
+
+  if (doubleBreak !== -1) {
+    bodyStart = doubleBreak + 4;
+  } else if (singleBreak !== -1) {
+    bodyStart = singleBreak + 2;
+  }
+
+  if (bodyStart === -1 || bodyStart >= rawResponse.length) {
+    return formatRawCode(rawResponse);
+  }
+
+  const body = rawResponse.slice(bodyStart).trim();
+  try {
+    const parsed = JSON.parse(body);
+    const prettyJson = JSON.stringify(parsed, null, 2);
+    return formatRawCode(prettyJson);
+  } catch (e) {
+    return formatRawCode(body);
+  }
+}
