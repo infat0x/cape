@@ -1,7 +1,11 @@
 {
-  "name": "caido-automate-payload-extractor",
+  "name": "cape",
   "version": "1.0.0",
   "description": "Extract and export Automate payloads directly to clipboard and custom wordlists in Caido.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/infat0x/cape.git"
+  },
   "keywords": [
     "caido",
     "caido-plugin",

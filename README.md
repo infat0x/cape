@@ -29,7 +29,7 @@ Designed to replicate and streamline the "Copy column" workflow familiar from to
 
 ### Method 1: Install Package (.zip)
 
-1. Download `automate-payload-extractor-v1.0.0.zip` from the [Releases](https://github.com/infat0x/caido-automate-payload-extractor/releases) page.
+1. Download `automate-payload-extractor-v1.0.0.zip` from the [Releases](https://github.com/infat0x/cape/releases) page.
 2. In Caido, click **Plugins** on the left sidebar.
 3. Click **Install Package** in the top right corner (or drag and drop the `.zip` file into the window).
 4. The **Payload Extractor** tab will appear in your sidebar.
@@ -39,8 +39,8 @@ Designed to replicate and streamline the "Copy column" workflow familiar from to
 Clone the repository:
 
 ```bash
-git clone https://github.com/infat0x/caido-automate-payload-extractor.git
-cd caido-automate-payload-extractor
+git clone https://github.com/infat0x/cape.git
+cd cape
 ```
 
 Build the distribution package:
@@ -95,7 +95,7 @@ The output zip file will be generated at `dist/automate-payload-extractor-v1.0.0
 ## Project Structure
 
 ```
-caido-automate-payload-extractor/
+cape/
 ├── manifest.json         # Plugin package manifest (v1.0.0)
 ├── package.json          # Node metadata
 ├── LICENSE               # MIT license
