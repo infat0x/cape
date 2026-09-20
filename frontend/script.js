@@ -96,15 +96,42 @@ function buildExtractorUI(sdk) {
       </div>
 
       <div class="ape-control-item">
-        <label class="ape-label" for="ape-status-select">Status:</label>
-        <select id="ape-status-select" class="ape-select" style="min-width: 90px;">
-          <option value="all">All</option>
-          <option value="200" selected>200 OK</option>
-          <option value="2xx">2XX</option>
-          <option value="3xx">3XX</option>
-          <option value="4xx">4XX</option>
-          <option value="5xx">5XX</option>
-        </select>
+        <label class="ape-label">Status:</label>
+        <div class="ape-dropdown-wrapper" id="ape-status-dropdown-wrap">
+          <button type="button" class="ape-dropdown-trigger status-val-200" id="ape-status-btn" title="Filter by HTTP Status">
+            <span style="display: inline-flex; align-items: center; gap: 6px;">
+              <span class="ape-status-dot status-dot-200" id="ape-status-btn-dot">●</span>
+              <span class="ape-dropdown-text status-text-200" id="ape-status-btn-text">200 OK</span>
+            </span>
+            <i class="fas fa-chevron-down ape-dropdown-chevron"></i>
+          </button>
+          <div class="ape-dropdown-menu" id="ape-status-menu">
+            <div class="ape-dropdown-item" data-value="all">
+              <span class="ape-status-dot status-dot-all">○</span>
+              <span class="ape-dropdown-item-text status-text-all">All</span>
+            </div>
+            <div class="ape-dropdown-item active" data-value="200">
+              <span class="ape-status-dot status-dot-200">●</span>
+              <span class="ape-dropdown-item-text status-text-200">200 OK</span>
+            </div>
+            <div class="ape-dropdown-item" data-value="2xx">
+              <span class="ape-status-dot status-dot-2xx">●</span>
+              <span class="ape-dropdown-item-text status-text-2xx">2XX</span>
+            </div>
+            <div class="ape-dropdown-item" data-value="3xx">
+              <span class="ape-status-dot status-dot-3xx">●</span>
+              <span class="ape-dropdown-item-text status-text-3xx">3XX</span>
+            </div>
+            <div class="ape-dropdown-item" data-value="4xx">
+              <span class="ape-status-dot status-dot-4xx">●</span>
+              <span class="ape-dropdown-item-text status-text-4xx">4XX</span>
+            </div>
+            <div class="ape-dropdown-item" data-value="5xx">
+              <span class="ape-status-dot status-dot-5xx">●</span>
+              <span class="ape-dropdown-item-text status-text-5xx">5XX</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="ape-search-wrapper">
@@ -220,8 +247,51 @@ function buildExtractorUI(sdk) {
     </div>
   `;
 
+  let activeStatus = "200";
+
   const runSelect = root.querySelector("#ape-run-select");
-  const statusSelect = root.querySelector("#ape-status-select");
+  const statusDropdownWrap = root.querySelector("#ape-status-dropdown-wrap");
+  const statusBtn = root.querySelector("#ape-status-btn");
+  const statusBtnDot = root.querySelector("#ape-status-btn-dot");
+  const statusBtnText = root.querySelector("#ape-status-btn-text");
+  const statusMenuItems = root.querySelectorAll("#ape-status-menu .ape-dropdown-item");
+
+  const statusConfigs = {
+    "all": { label: "All", dotClass: "status-dot-all", textClass: "status-text-all", valClass: "status-val-all", dot: "○" },
+    "200": { label: "200 OK", dotClass: "status-dot-200", textClass: "status-text-200", valClass: "status-val-200", dot: "●" },
+    "2xx": { label: "2XX", dotClass: "status-dot-2xx", textClass: "status-text-2xx", valClass: "status-val-2xx", dot: "●" },
+    "3xx": { label: "3XX", dotClass: "status-dot-3xx", textClass: "status-text-3xx", valClass: "status-val-3xx", dot: "●" },
+    "4xx": { label: "4XX", dotClass: "status-dot-4xx", textClass: "status-text-4xx", valClass: "status-val-4xx", dot: "●" },
+    "5xx": { label: "5XX", dotClass: "status-dot-5xx", textClass: "status-text-5xx", valClass: "status-val-5xx", dot: "●" }
+  };
+
+  const setStatus = (statusKey, triggerRender = true) => {
+    activeStatus = statusKey;
+    const cfg = statusConfigs[statusKey] || statusConfigs["all"];
+
+    ["status-val-all", "status-val-200", "status-val-2xx", "status-val-3xx", "status-val-4xx", "status-val-5xx"].forEach((cls) => {
+      statusBtn.classList.remove(cls);
+    });
+    statusBtn.classList.add(cfg.valClass);
+
+    statusBtnDot.className = `ape-status-dot ${cfg.dotClass}`;
+    statusBtnDot.textContent = cfg.dot;
+    statusBtnText.className = `ape-dropdown-text ${cfg.textClass}`;
+    statusBtnText.textContent = cfg.label;
+
+    statusMenuItems.forEach((item) => {
+      if (item.getAttribute("data-value") === statusKey) {
+        item.classList.add("active");
+      } else {
+        item.classList.remove("active");
+      }
+    });
+
+    if (triggerRender) {
+      applyFiltersAndRender();
+    }
+  };
+
   const searchInput = root.querySelector("#ape-search-input");
   const dedupeToggle = root.querySelector("#ape-dedupe-toggle");
   const copyBtn = root.querySelector("#ape-copy-btn");
@@ -309,7 +379,6 @@ function buildExtractorUI(sdk) {
 
   const applyFiltersAndRender = () => {
     const filterQuery = (searchInput.value || "").toLowerCase().trim();
-    const activeStatus = statusSelect.value;
     const shouldDedupe = dedupeToggle.checked;
 
     let list = rawRequests.filter((item) => {
@@ -632,13 +701,32 @@ function buildExtractorUI(sdk) {
     }
   });
 
-  statusSelect.addEventListener("change", applyFiltersAndRender);
+  statusBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    statusDropdownWrap.classList.toggle("open");
+  });
+
+  statusMenuItems.forEach((item) => {
+    item.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const val = item.getAttribute("data-value");
+      setStatus(val);
+      statusDropdownWrap.classList.remove("open");
+    });
+  });
+
+  document.addEventListener("click", (e) => {
+    if (statusDropdownWrap && !statusDropdownWrap.contains(e.target)) {
+      statusDropdownWrap.classList.remove("open");
+    }
+  });
+
   searchInput.addEventListener("input", applyFiltersAndRender);
   dedupeToggle.addEventListener("change", applyFiltersAndRender);
   refreshBtn.addEventListener("click", loadRuns);
 
   resetBtn.addEventListener("click", () => {
-    statusSelect.value = "200";
+    setStatus("200", false);
     searchInput.value = "";
     dedupeToggle.checked = true;
     applyFiltersAndRender();

@@ -606,3 +606,130 @@
   height: 32px;
   opacity: 0.3;
 }
+
+/* Custom Status Dropdown with Dynamic Colors */
+.ape-dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.ape-dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 8px;
+  background-color: var(--caido-bg-app);
+  border: 1px solid var(--caido-border-strong);
+  border-radius: 4px;
+  font-family: var(--caido-font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+  min-width: 100px;
+  justify-content: space-between;
+  box-sizing: border-box;
+  transition: all 0.12s ease;
+}
+
+.ape-dropdown-trigger:hover {
+  background-color: var(--caido-bg-surface);
+  border-color: var(--caido-text-muted);
+}
+
+.ape-dropdown-trigger:focus {
+  border-color: var(--caido-accent);
+}
+
+.ape-dropdown-chevron {
+  font-size: 9px;
+  color: var(--caido-text-dim);
+  margin-left: 6px;
+  transition: transform 0.15s ease;
+}
+
+.ape-dropdown-wrapper.open .ape-dropdown-chevron {
+  transform: rotate(180deg);
+}
+
+.ape-dropdown-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 125px;
+  background-color: var(--caido-bg-surface);
+  border: 1px solid var(--caido-border);
+  border-radius: 4px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+  padding: 4px 0;
+  z-index: 100;
+  box-sizing: border-box;
+}
+
+.ape-dropdown-wrapper.open .ape-dropdown-menu {
+  display: block;
+}
+
+.ape-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.08s ease;
+  font-family: var(--caido-font-sans);
+}
+
+.ape-dropdown-item:hover {
+  background-color: var(--caido-bg-hover);
+}
+
+.ape-dropdown-item.active {
+  background-color: var(--caido-bg-surface-hover);
+  font-weight: 600;
+}
+
+/* Status Indicator Dots */
+.ape-status-dot {
+  font-size: 9px;
+  line-height: 1;
+}
+
+.status-dot-200, .status-dot-2xx { color: var(--caido-green); }
+.status-dot-3xx { color: var(--caido-cyan); }
+.status-dot-4xx, .status-dot-5xx { color: var(--caido-red); }
+.status-dot-all { color: var(--caido-text-dim); }
+
+/* Status Text Colors */
+.status-text-200, .status-text-2xx { color: var(--caido-green); }
+.status-text-3xx { color: var(--caido-cyan); }
+.status-text-4xx, .status-text-5xx { color: var(--caido-red); }
+.status-text-all { color: var(--caido-text); }
+
+/* Trigger Styling per Active Status */
+.ape-dropdown-trigger.status-val-200,
+.ape-dropdown-trigger.status-val-2xx {
+  border-color: rgba(78, 201, 109, 0.4);
+  background-color: rgba(78, 201, 109, 0.07);
+}
+
+.ape-dropdown-trigger.status-val-3xx {
+  border-color: rgba(121, 192, 255, 0.4);
+  background-color: rgba(121, 192, 255, 0.07);
+}
+
+.ape-dropdown-trigger.status-val-4xx,
+.ape-dropdown-trigger.status-val-5xx {
+  border-color: rgba(248, 81, 73, 0.4);
+  background-color: rgba(248, 81, 73, 0.07);
+}
+
+.ape-dropdown-trigger.status-val-all {
+  border-color: var(--caido-border-strong);
+  background-color: var(--caido-bg-app);
+}
