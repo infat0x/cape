@@ -1,6 +1,6 @@
 /**
  * Automate Payload Extractor - Frontend Plugin
- * High density table UI matching Caido native interface.
+ * High-density split-pane interface styled strictly after Caido's native UI.
  */
 
 export const init = (sdk) => {
@@ -79,47 +79,32 @@ function buildExtractorUI(sdk) {
 
   let rawRequests = [];
   let filteredRequests = [];
+  let selectedItem = null;
+  let activeStatusFilter = "200";
 
   root.innerHTML = `
+    <!-- Top Bar -->
     <div class="ape-toolbar">
       <div class="ape-control-item">
         <label class="ape-label" for="ape-run-select">Run:</label>
-        <select id="ape-run-select" class="ape-select" style="min-width: 220px;">
+        <select id="ape-run-select" class="ape-select">
           <option value="">Loading attack runs...</option>
         </select>
       </div>
 
-      <div class="ape-control-item">
-        <label class="ape-label" for="ape-status-select">Status:</label>
-        <select id="ape-status-select" class="ape-select">
-          <option value="all">All Responses</option>
-          <option value="200" selected>200 OK Only</option>
-          <option value="2xx">2xx Success</option>
-          <option value="3xx">3xx Redirects</option>
-          <option value="4xx">4xx Client Errors</option>
-          <option value="5xx">5xx Server Errors</option>
-        </select>
-      </div>
-
-      <div class="ape-control-item">
-        <input type="text" id="ape-search-input" class="ape-input" placeholder="Search payloads..." />
-      </div>
-
-      <div class="ape-control-item">
-        <label class="ape-checkbox-label">
-          <input type="checkbox" id="ape-dedupe-toggle" checked />
-          <span>Deduplicate</span>
-        </label>
+      <div class="ape-search-wrapper">
+        <i class="fas fa-search ape-search-icon"></i>
+        <input type="text" id="ape-search-input" class="ape-search-input" placeholder="Filter payloads or queries..." />
       </div>
 
       <div class="ape-spacer"></div>
 
-      <button id="ape-copy-btn" class="ape-btn ape-btn-primary" title="Copy visible payloads to clipboard">
+      <button id="ape-copy-btn" class="ape-btn ape-btn-primary" title="Copy filtered payloads to clipboard">
         <i class="fas fa-copy"></i>
         <span>Copy Payloads</span>
       </button>
 
-      <button id="ape-export-btn" class="ape-btn ape-btn-secondary" title="Export visible payloads as .txt wordlist">
+      <button id="ape-export-btn" class="ape-btn ape-btn-secondary" title="Export filtered payloads as .txt wordlist">
         <i class="fas fa-download"></i>
         <span>Export .txt</span>
       </button>
@@ -129,26 +114,67 @@ function buildExtractorUI(sdk) {
       </button>
     </div>
 
-    <div class="ape-table-wrapper">
-      <table class="ape-table">
-        <thead>
-          <tr>
-            <th class="col-id">ID</th>
-            <th class="col-payload">Payload</th>
-            <th class="col-status">Status</th>
-            <th class="col-length">Length</th>
-            <th class="col-time">Time (ms)</th>
-            <th class="col-action">Copy</th>
-          </tr>
-        </thead>
-        <tbody id="ape-table-body">
-          <tr class="ape-empty-row">
-            <td colspan="6">Loading attack runs...</td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- Applied Filters Bar -->
+    <div class="ape-filters-bar">
+      <span class="ape-filters-label">Status:</span>
+      <button class="ape-filter-chip" data-status="all">All</button>
+      <button class="ape-filter-chip chip-200 active" data-status="200">200 OK</button>
+      <button class="ape-filter-chip chip-200" data-status="2xx">2XX</button>
+      <button class="ape-filter-chip chip-3xx" data-status="3xx">3XX</button>
+      <button class="ape-filter-chip chip-4xx" data-status="4xx">4XX</button>
+      <button class="ape-filter-chip chip-4xx" data-status="5xx">5XX</button>
+
+      <div class="ape-filter-sep"></div>
+
+      <label class="ape-checkbox-chip">
+        <input type="checkbox" id="ape-dedupe-toggle" checked />
+        <span>Deduplicate</span>
+      </label>
     </div>
 
+    <!-- Master-Detail Workspace -->
+    <div class="ape-workspace">
+      <!-- Upper: Payloads Table -->
+      <div class="ape-table-pane" id="ape-table-pane">
+        <table class="ape-table">
+          <thead>
+            <tr>
+              <th class="col-id">ID</th>
+              <th class="col-method">Method</th>
+              <th class="col-path">Path & Query</th>
+              <th class="col-payload">Payload</th>
+              <th class="col-status">Status</th>
+              <th class="col-length">Length</th>
+              <th class="col-time">Response Time (ms)</th>
+              <th class="col-action">Copy</th>
+            </tr>
+          </thead>
+          <tbody id="ape-table-body">
+            <tr>
+              <td colspan="8" class="ape-empty-message">Loading attack runs...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Resizable Splitter Divider -->
+      <div class="ape-splitter" id="ape-splitter" title="Drag to resize detail pane"></div>
+
+      <!-- Lower: Master-Detail Inspector Pane -->
+      <div class="ape-detail-pane" id="ape-detail-pane">
+        <div id="ape-detail-inner" style="height: 100%; display: flex; flex-direction: column;">
+          <div class="ape-empty-detail">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 0h6"/>
+            </svg>
+            <span style="font-size: 13px; font-weight: 500;">No payload selected</span>
+            <span style="font-size: 11px; color: var(--caido-text-dim);">Select a request from the table above to inspect details.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Status Bar -->
     <div class="ape-statusbar">
       <div class="ape-statusbar-left" id="ape-status-text">
         <span>0 requests</span>
@@ -160,7 +186,6 @@ function buildExtractorUI(sdk) {
   `;
 
   const runSelect = root.querySelector("#ape-run-select");
-  const statusSelect = root.querySelector("#ape-status-select");
   const searchInput = root.querySelector("#ape-search-input");
   const dedupeToggle = root.querySelector("#ape-dedupe-toggle");
   const copyBtn = root.querySelector("#ape-copy-btn");
@@ -168,7 +193,12 @@ function buildExtractorUI(sdk) {
   const refreshBtn = root.querySelector("#ape-refresh-btn");
   const tableBody = root.querySelector("#ape-table-body");
   const statusText = root.querySelector("#ape-status-text");
+  const detailInner = root.querySelector("#ape-detail-inner");
+  const splitter = root.querySelector("#ape-splitter");
+  const detailPane = root.querySelector("#ape-detail-pane");
+  const filterChips = root.querySelectorAll(".ape-filter-chip");
 
+  // Load runs
   const loadRuns = async () => {
     runSelect.innerHTML = `<option value="">Loading attack runs...</option>`;
     setTableMessage("Loading attack runs...");
@@ -187,6 +217,7 @@ function buildExtractorUI(sdk) {
         runSelect.innerHTML = `<option value="">(No Automate runs found)</option>`;
         setTableMessage("No Automate attack runs found in this project.");
         updateStatusBar(0, 0, 0);
+        renderEmptyDetail();
         return;
       }
 
@@ -211,12 +242,17 @@ function buildExtractorUI(sdk) {
     setTableMessage("Loading payloads for selected run...");
     rawRequests = [];
     filteredRequests = [];
+    selectedItem = null;
+    renderEmptyDetail();
     updateStatusBar(0, 0, 0);
 
     try {
       const items = await sdk.backend.getRunPayloads(runId);
       rawRequests = Array.isArray(items) ? items : [];
       applyFiltersAndRender();
+      if (filteredRequests.length > 0) {
+        selectItem(filteredRequests[0]);
+      }
     } catch (err) {
       console.error("[Automate Payload Extractor] Failed to load payloads:", err);
       setTableMessage("Failed to load payloads: " + err.message);
@@ -224,21 +260,25 @@ function buildExtractorUI(sdk) {
   };
 
   const applyFiltersAndRender = () => {
-    const selectedStatus = statusSelect.value;
     const filterQuery = (searchInput.value || "").toLowerCase().trim();
     const shouldDedupe = dedupeToggle.checked;
 
     let list = rawRequests.filter((item) => {
       const code = item.statusCode;
 
-      if (selectedStatus === "200" && code !== 200) return false;
-      if (selectedStatus === "2xx" && (code < 200 || code >= 300)) return false;
-      if (selectedStatus === "3xx" && (code < 300 || code >= 400)) return false;
-      if (selectedStatus === "4xx" && (code < 400 || code >= 500)) return false;
-      if (selectedStatus === "5xx" && (code < 500 || code >= 600)) return false;
+      if (activeStatusFilter === "200" && code !== 200) return false;
+      if (activeStatusFilter === "2xx" && (code < 200 || code >= 300)) return false;
+      if (activeStatusFilter === "3xx" && (code < 300 || code >= 400)) return false;
+      if (activeStatusFilter === "4xx" && (code < 400 || code >= 500)) return false;
+      if (activeStatusFilter === "5xx" && (code < 500 || code >= 600)) return false;
 
-      if (filterQuery && !item.payload.toLowerCase().includes(filterQuery)) {
-        return false;
+      if (filterQuery) {
+        const matchPayload = item.payload && item.payload.toLowerCase().includes(filterQuery);
+        const matchPath = item.path && item.path.toLowerCase().includes(filterQuery);
+        const matchQuery = item.query && item.query.toLowerCase().includes(filterQuery);
+        if (!matchPayload && !matchPath && !matchQuery) {
+          return false;
+        }
       }
 
       return true;
@@ -257,6 +297,15 @@ function buildExtractorUI(sdk) {
     const uniqueCount = new Set(filteredRequests.map((r) => r.payload)).size;
     updateStatusBar(rawRequests.length, filteredRequests.length, uniqueCount);
     renderTableRows(filteredRequests);
+
+    if (selectedItem && !filteredRequests.some((r) => r.id === selectedItem.id)) {
+      if (filteredRequests.length > 0) {
+        selectItem(filteredRequests[0]);
+      } else {
+        selectedItem = null;
+        renderEmptyDetail();
+      }
+    }
   };
 
   const renderTableRows = (items) => {
@@ -271,14 +320,21 @@ function buildExtractorUI(sdk) {
 
     items.forEach((item) => {
       const tr = document.createElement("tr");
+      if (selectedItem && selectedItem.id === item.id) {
+        tr.classList.add("ape-selected-row");
+      }
 
+      const methodClass = item.method === "POST" ? "method-post" : "method-get";
       const statusClass = getStatusClass(item.statusCode);
       const statusLabel = item.statusCode != null ? item.statusCode : "-";
       const lengthLabel = item.length != null ? item.length : "-";
       const timeLabel = item.roundtripTime != null ? item.roundtripTime : "-";
+      const fullPath = item.path + (item.query ? `?${item.query}` : "");
 
       tr.innerHTML = `
         <td class="col-id">${item.id}</td>
+        <td class="col-method ${methodClass}">${escapeHtml(item.method)}</td>
+        <td class="col-path" title="${escapeHtml(fullPath)}">${escapeHtml(fullPath)}</td>
         <td class="col-payload" title="${escapeHtml(item.payload)}">${escapeHtml(item.payload)}</td>
         <td class="col-status ${statusClass}">${statusLabel}</td>
         <td class="col-length">${lengthLabel}</td>
@@ -291,9 +347,7 @@ function buildExtractorUI(sdk) {
       `;
 
       tr.addEventListener("click", () => {
-        const selected = root.querySelectorAll(".ape-row-selected");
-        selected.forEach((el) => el.classList.remove("ape-row-selected"));
-        tr.classList.add("ape-row-selected");
+        selectItem(item);
       });
 
       tr.addEventListener("dblclick", async () => {
@@ -314,10 +368,103 @@ function buildExtractorUI(sdk) {
     tableBody.appendChild(fragment);
   };
 
+  const selectItem = (item) => {
+    selectedItem = item;
+
+    const rows = tableBody.querySelectorAll("tr");
+    rows.forEach((r, idx) => {
+      if (filteredRequests[idx] && filteredRequests[idx].id === item.id) {
+        r.classList.add("ape-selected-row");
+      } else {
+        r.classList.remove("ape-selected-row");
+      }
+    });
+
+    renderDetailView(item);
+  };
+
+  const renderDetailView = (item) => {
+    const isPost = item.method === "POST";
+    const methodBadgeClass = isPost ? "badge-post" : "badge-get";
+    const is200 = item.statusCode === 200;
+    const statusBadgeClass = is200 ? "badge-status-200" : "badge-status-err";
+    const statusLabel = item.statusCode != null ? `${item.statusCode} OK` : "Pending";
+    const fullPath = item.path + (item.query ? `?${item.query}` : "");
+    const hostHeader = item.host || "target";
+
+    const httpRequest = `${item.method} ${fullPath} HTTP/1.1\nHost: ${hostHeader}\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)\nAccept: */*\nConnection: close`;
+
+    detailInner.innerHTML = `
+      <div class="ape-detail-header">
+        <span class="ape-badge ${methodBadgeClass}">${escapeHtml(item.method)}</span>
+        <span class="ape-badge ${statusBadgeClass}">${escapeHtml(statusLabel)}</span>
+        <span class="ape-detail-title" title="ID: ${item.id} - ${escapeHtml(item.payload)}">
+          ID: ${item.id} &bull; ${escapeHtml(item.payload)}
+        </span>
+
+        <span class="ape-detail-meta">
+          ${item.length != null ? item.length + " bytes" : ""} ${item.roundtripTime != null ? " &bull; " + item.roundtripTime + "ms" : ""}
+        </span>
+
+        <button id="ape-copy-single-payload" class="ape-btn ape-btn-secondary" style="height: 22px; font-size: 11px; padding: 0 7px;" title="Copy payload value">
+          <i class="fas fa-copy"></i>
+          <span>Copy Payload</span>
+        </button>
+
+        <button id="ape-copy-single-request" class="ape-btn ape-btn-secondary" style="height: 22px; font-size: 11px; padding: 0 7px;" title="Copy reconstructed HTTP request">
+          <i class="fas fa-file-code"></i>
+          <span>Copy Request</span>
+        </button>
+      </div>
+
+      <div class="ape-detail-content">
+        <!-- Column 1: Payload Inspector -->
+        <div class="ape-detail-column">
+          <div class="ape-detail-column-header">
+            <span>Payload Value (${item.payload.length} chars)</span>
+            <span style="font-size: 10px; font-family: var(--caido-font-mono); opacity: 0.6;">UTF-8</span>
+          </div>
+          <pre class="ape-code-viewer">${escapeHtml(item.payload)}</pre>
+        </div>
+
+        <!-- Column 2: Reconstructed HTTP Request -->
+        <div class="ape-detail-column">
+          <div class="ape-detail-column-header">
+            <span>HTTP Request Preview</span>
+            <span style="font-size: 10px; font-family: var(--caido-font-mono); opacity: 0.6;">${escapeHtml(item.method)}</span>
+          </div>
+          <pre class="ape-code-viewer">${escapeHtml(httpRequest)}</pre>
+        </div>
+      </div>
+    `;
+
+    detailInner.querySelector("#ape-copy-single-payload").addEventListener("click", async () => {
+      await navigator.clipboard.writeText(item.payload);
+      showToast(sdk, `Copied "${item.payload}" to clipboard.`, "success");
+    });
+
+    detailInner.querySelector("#ape-copy-single-request").addEventListener("click", async () => {
+      await navigator.clipboard.writeText(httpRequest);
+      showToast(sdk, "Copied HTTP request to clipboard.", "success");
+    });
+  };
+
+  const renderEmptyDetail = () => {
+    detailInner.innerHTML = `
+      <div class="ape-empty-detail">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 0h6"/>
+        </svg>
+        <span style="font-size: 13px; font-weight: 500;">No payload selected</span>
+        <span style="font-size: 11px; color: var(--caido-text-dim);">Select a request from the table above to inspect details.</span>
+      </div>
+    `;
+  };
+
   const setTableMessage = (msg) => {
     tableBody.innerHTML = `
-      <tr class="ape-empty-row">
-        <td colspan="6">${escapeHtml(msg)}</td>
+      <tr>
+        <td colspan="8" class="ape-empty-message">${escapeHtml(msg)}</td>
       </tr>
     `;
   };
@@ -330,19 +477,56 @@ function buildExtractorUI(sdk) {
 
     statusText.innerHTML = `
       <span>${filtered} requests (filtered from ${total})</span>
-      <span style="opacity: 0.5;">|</span>
+      <span style="opacity: 0.4;">|</span>
       <span>${unique} unique payloads</span>
     `;
   };
 
-  // Event handlers
+  // Filter chips click handling
+  filterChips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      filterChips.forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      activeStatusFilter = chip.getAttribute("data-status");
+      applyFiltersAndRender();
+    });
+  });
+
+  // Splitter drag to resize
+  let isDragging = false;
+  let startY = 0;
+  let startHeight = 220;
+
+  splitter.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    startY = e.clientY;
+    startHeight = detailPane.offsetHeight;
+    document.body.style.cursor = "row-resize";
+    document.body.style.userSelect = "none";
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+    const deltaY = startY - e.clientY;
+    const newHeight = Math.max(80, Math.min(600, startHeight + deltaY));
+    detailPane.style.height = `${newHeight}px`;
+  });
+
+  document.addEventListener("mouseup", () => {
+    if (isDragging) {
+      isDragging = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+  });
+
+  // Controls events
   runSelect.addEventListener("change", () => {
     if (runSelect.value) {
       loadRunRequests(runSelect.value);
     }
   });
 
-  statusSelect.addEventListener("change", applyFiltersAndRender);
   searchInput.addEventListener("input", applyFiltersAndRender);
   dedupeToggle.addEventListener("change", applyFiltersAndRender);
   refreshBtn.addEventListener("click", loadRuns);
@@ -384,10 +568,9 @@ function buildExtractorUI(sdk) {
 function getStatusClass(code) {
   if (code == null) return "status-none";
   if (code === 200) return "status-200";
-  if (code >= 200 && code < 300) return "status-2xx";
-  if (code >= 300 && code < 400) return "status-3xx";
-  if (code >= 400 && code < 500) return "status-4xx";
-  if (code >= 500) return "status-5xx";
+  if (code >= 300 && code < 400) return "status-300";
+  if (code >= 400 && code < 500) return "status-400";
+  if (code >= 500) return "status-500";
   return "status-none";
 }
 
