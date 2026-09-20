@@ -9,7 +9,8 @@ Designed to replicate and streamline the "Copy column" workflow familiar from to
       <img src="https://img.shields.io/github/v/release/infat0x/cape?style=for-the-badge&color=blue" alt="Release">
       <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License">
       <img src="https://img.shields.io/badge/Tested%20on-Linux%20%7C%20Windows%20%7C%20macOS-informational?style=for-the-badge" alt="Platform">
-    </p>
+</p>
+
 ---
 
 ## Features
