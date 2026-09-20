@@ -11,7 +11,10 @@
     "pentest",
     "bugbounty"
   ],
-  "author": "Infat",
+  "author": {
+    "name": "Infat",
+    "url": "https://github.com/infat0x"
+  },
   "license": "MIT",
   "type": "module",
   "scripts": {
