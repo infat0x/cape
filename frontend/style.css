@@ -1,30 +1,42 @@
 /**
  * Automate Payload Extractor - Stylesheet
- * Faithfully designed after Caido's native interface and split-pane layout.
+ * Strict neutral dark gray theme matching Caido's native palette (zero blue tint).
  */
 
 :root {
-  --caido-bg-app: #0d1017;
-  --caido-bg-panel: #121620;
-  --caido-bg-surface: #151a26;
-  --caido-bg-surface-elevated: #1a202f;
-  --caido-bg-hover: #192030;
-  --caido-bg-selected: #1f273b;
-  --caido-border: #1e2535;
-  --caido-border-strong: #2a3449;
+  /* Neutral Dark Charcoal & Slate Palette */
+  --caido-bg-app: #181a1f;
+  --caido-bg-panel: #202227;
+  --caido-bg-surface: #24262c;
+  --caido-bg-surface-elevated: #2b2e35;
+  --caido-bg-hover: #2e3138;
+  --caido-bg-selected: #353842;
+  --caido-border: #2c2f36;
+  --caido-border-subtle: #24262d;
+  --caido-border-strong: #3a3d46;
   --caido-border-focus: #f0642f;
-  --caido-text-bright: #f0f6fc;
-  --caido-text: #c9d1d9;
-  --caido-text-muted: #7d8590;
-  --caido-text-dim: #484f58;
+
+  /* Typography */
+  --caido-text-bright: #f0f0f2;
+  --caido-text: #d0d2d7;
+  --caido-text-muted: #8c9098;
+  --caido-text-dim: #5c6068;
+
+  /* Caido Accent (Orange/Amber) */
   --caido-accent: #f0642f;
   --caido-accent-hover: #fa723d;
   --caido-accent-dim: rgba(240, 100, 47, 0.15);
-  --caido-status-200: #3fb950;
-  --caido-status-300: #58a6ff;
-  --caido-status-400: #f85149;
-  --caido-method-get: #79c0ff;
-  --caido-method-post: #ffab70;
+
+  /* Status Colors (Neutral gray for redirects, green for 200, red for errors) */
+  --caido-status-200: #4ec96d;
+  --caido-status-300: #b0b4bc;
+  --caido-status-400: #e05252;
+  --caido-status-500: #e05252;
+
+  /* Method & Header (Neutral clean gray) */
+  --caido-method-neutral: #c4c7cd;
+  --caido-method-post: #d99b64;
+
   --caido-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --caido-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 }
@@ -42,7 +54,7 @@
   font-size: 12px;
 }
 
-/* Top Toolbar */
+/* Top Bar */
 .ape-toolbar {
   display: flex;
   align-items: center;
@@ -200,27 +212,27 @@
 }
 
 .ape-filter-chip.active {
-  background-color: var(--caido-accent-dim);
-  border-color: var(--caido-accent);
-  color: var(--caido-accent);
+  background-color: var(--caido-bg-selected);
+  border-color: var(--caido-border-strong);
+  color: var(--caido-text-bright);
   font-weight: 500;
 }
 
 .ape-filter-chip.chip-200.active {
-  background-color: rgba(63, 185, 80, 0.15);
-  border-color: rgba(63, 185, 80, 0.4);
+  background-color: rgba(78, 201, 109, 0.12);
+  border-color: rgba(78, 201, 109, 0.35);
   color: var(--caido-status-200);
 }
 
 .ape-filter-chip.chip-3xx.active {
-  background-color: rgba(88, 166, 255, 0.15);
-  border-color: rgba(88, 166, 255, 0.4);
+  background-color: rgba(176, 180, 188, 0.12);
+  border-color: rgba(176, 180, 188, 0.35);
   color: var(--caido-status-300);
 }
 
 .ape-filter-chip.chip-4xx.active {
-  background-color: rgba(248, 81, 73, 0.15);
-  border-color: rgba(248, 81, 73, 0.4);
+  background-color: rgba(224, 82, 82, 0.12);
+  border-color: rgba(224, 82, 82, 0.35);
   color: var(--caido-status-400);
 }
 
@@ -248,7 +260,7 @@
   cursor: pointer;
 }
 
-/* Master-Detail Split Pane */
+/* Master-Detail Workspace */
 .ape-workspace {
   display: flex;
   flex-direction: column;
@@ -257,7 +269,7 @@
   position: relative;
 }
 
-/* Top: Payloads Table */
+/* Upper: Payloads Table */
 .ape-table-pane {
   flex: 1;
   overflow: auto;
@@ -338,6 +350,7 @@
   width: 60px;
   font-family: var(--caido-font-mono);
   font-weight: 500;
+  color: var(--caido-method-neutral);
 }
 
 .col-path {
@@ -378,9 +391,6 @@
 .status-300 { color: var(--caido-status-300); }
 .status-400, .status-500 { color: var(--caido-status-400); }
 .status-none { color: var(--caido-text-muted); }
-
-.method-get { color: var(--caido-method-get); }
-.method-post { color: var(--caido-method-post); }
 
 .ape-row-copy-btn {
   background: transparent;
@@ -425,7 +435,7 @@
   background-color: var(--caido-border-strong);
 }
 
-/* Bottom: Detail Pane */
+/* Lower: Detail Pane */
 .ape-detail-pane {
   height: 220px;
   background-color: var(--caido-bg-app);
@@ -456,28 +466,28 @@
   text-transform: uppercase;
 }
 
-.badge-get {
-  background-color: rgba(56, 139, 253, 0.15);
-  color: var(--caido-method-get);
-  border: 1px solid rgba(56, 139, 253, 0.3);
-}
-
-.badge-post {
-  background-color: rgba(210, 153, 34, 0.15);
-  color: var(--caido-method-post);
-  border: 1px solid rgba(210, 153, 34, 0.3);
+.badge-method {
+  background-color: var(--caido-bg-surface-elevated);
+  color: var(--caido-text-bright);
+  border: 1px solid var(--caido-border-strong);
 }
 
 .badge-status-200 {
-  background-color: rgba(63, 185, 80, 0.15);
+  background-color: rgba(78, 201, 109, 0.12);
   color: var(--caido-status-200);
-  border: 1px solid rgba(63, 185, 80, 0.3);
+  border: 1px solid rgba(78, 201, 109, 0.35);
 }
 
 .badge-status-err {
-  background-color: rgba(248, 81, 73, 0.15);
+  background-color: rgba(224, 82, 82, 0.12);
   color: var(--caido-status-400);
-  border: 1px solid rgba(248, 81, 73, 0.3);
+  border: 1px solid rgba(224, 82, 82, 0.35);
+}
+
+.badge-status-other {
+  background-color: var(--caido-bg-surface-elevated);
+  color: var(--caido-text-muted);
+  border: 1px solid var(--caido-border-strong);
 }
 
 .ape-detail-title {
