@@ -24,7 +24,7 @@ def main():
         manifest = json.load(f)
 
     plugin_id = manifest.get("id", "caido-plugin")
-    version = manifest.get("version", "1.0.0")
+    version = manifest.get("version", "1.0.3")
     zip_filename = f"{plugin_id}-v{version}.zip"
 
     DIST_DIR.mkdir(exist_ok=True)
@@ -36,6 +36,7 @@ def main():
         ("manifest.json", ROOT_DIR / "manifest.json"),
         ("frontend/script.js", ROOT_DIR / "frontend" / "script.js"),
         ("frontend/style.css", ROOT_DIR / "frontend" / "style.css"),
+        ("backend/script.js", ROOT_DIR / "backend" / "script.js"),
     ]
 
     # Optional docs

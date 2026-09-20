@@ -1,7 +1,7 @@
 {
   "id": "automate-payload-extractor",
   "name": "Automate Payload Extractor",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "Seamlessly inspect, filter, and copy payloads from Caido Automate sessions into your clipboard or wordlists.",
   "author": {
     "name": "Infat",
@@ -11,9 +11,15 @@
     {
       "kind": "frontend",
       "id": "automate-payload-extractor-frontend",
-      "name": "Automate Payload Extractor",
+      "name": "Automate Payload Extractor Frontend",
       "entrypoint": "frontend/script.js",
       "style": "frontend/style.css"
+    },
+    {
+      "kind": "backend",
+      "id": "automate-payload-extractor-backend",
+      "name": "Automate Payload Extractor Backend",
+      "entrypoint": "backend/script.js"
     }
   ]
 }

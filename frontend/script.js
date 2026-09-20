@@ -1,7 +1,6 @@
 /**
  * Automate Payload Extractor
- * A high-performance Caido frontend plugin to inspect, filter, and copy
- * payloads from Automate fuzzing runs directly to clipboard or text files.
+ * Frontend UI Component calling the Backend RPC Bridge.
  *
  * @author Infat
  * @license MIT
@@ -13,7 +12,7 @@
  * @param {import("@caido/sdk-frontend").Caido} sdk
  */
 export const init = (sdk) => {
-  console.log("[Automate Payload Extractor] Initializing plugin v1.0.2...");
+  console.log("[Automate Payload Extractor] Frontend initialized v1.0.3");
 
   // Register command in Caido's Command Palette (Ctrl+K / Cmd+K)
   if (sdk.commands && typeof sdk.commands.register === "function") {
@@ -51,82 +50,26 @@ export const init = (sdk) => {
       icon: "fas fa-clone"
     });
   }
-
-  console.log("[Automate Payload Extractor] Plugin loaded successfully.");
 };
-
-/**
- * Executes a GraphQL query against Caido's backend SDK.
- */
-async function executeGraphQL(sdk, query, variables = {}) {
-  let response;
-  if (sdk.graphql && typeof sdk.graphql.execute === "function") {
-    response = await sdk.graphql.execute(query, variables);
-  } else if (typeof sdk.graphql === "function") {
-    response = await sdk.graphql(query, variables);
-  } else if (sdk.api && typeof sdk.api.graphql === "function") {
-    response = await sdk.api.graphql(query, variables);
-  } else {
-    throw new Error("GraphQL execution method not found on Caido SDK.");
-  }
-
-  if (response && response.data !== undefined) {
-    if (response.errors && response.errors.length > 0) {
-      console.warn("[Automate Payload Extractor] GraphQL returned errors:", response.errors);
-    }
-    return response.data;
-  }
-  return response;
-}
-
-/**
- * RFC 4648 Base32hex decoder used by Caido's internal storage.
- * e.g., 'DTN64PB6DTP6AQBEE1QN8===' -> 'onbeforeinput'
- */
-function decodeBase32Hex(input) {
-  if (!input || typeof input !== "string") return "";
-  const clean = input.replace(/=+$/, "").toUpperCase();
-  const alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
-
-  // Validate characters against base32hex alphabet
-  for (let i = 0; i < clean.length; i++) {
-    if (alphabet.indexOf(clean[i]) === -1) {
-      return input; // Not base32hex, return as-is
-    }
-  }
-
-  let bitString = "";
-  for (let i = 0; i < clean.length; i++) {
-    const val = alphabet.indexOf(clean[i]);
-    bitString += val.toString(2).padStart(5, "0");
-  }
-
-  const bytes = [];
-  for (let i = 0; i + 8 <= bitString.length; i += 8) {
-    bytes.push(parseInt(bitString.substr(i, 8), 2));
-  }
-
-  try {
-    const decoded = new TextDecoder("utf-8").decode(new Uint8Array(bytes));
-    return decoded || input;
-  } catch (e) {
-    return input;
-  }
-}
 
 /**
  * Fast action triggered from keyboard shortcut or command palette.
  */
 async function quickCopyLastSuccessful(sdk) {
   try {
-    const runs = await fetchAllAutomateRuns(sdk);
+    if (!sdk.backend || typeof sdk.backend.getRuns !== "function") {
+      showToast(sdk, "Backend RPC not available. Please reinstall plugin package.", "error");
+      return;
+    }
+
+    const runs = await sdk.backend.getRuns();
     if (!runs || runs.length === 0) {
       showToast(sdk, "No Automate attack runs found.", "warning");
       return;
     }
 
     const latestRun = runs[0];
-    const requests = await fetchRunRequests(sdk, latestRun.id);
+    const requests = await sdk.backend.getRunPayloads(latestRun.id);
 
     const successfulPayloads = requests
       .filter((r) => r.statusCode === 200)
@@ -162,7 +105,7 @@ function buildExtractorUI(sdk) {
       <div class="ape-title-group">
         <h1>
           <span>Automate Payload Extractor</span>
-          <span class="ape-badge">v1.0.2</span>
+          <span class="ape-badge">v1.0.3</span>
         </h1>
         <p class="ape-subtitle">Extract, filter, and export payload columns from any Automate run.</p>
       </div>
@@ -261,11 +204,17 @@ function buildExtractorUI(sdk) {
   const statFiltered = root.querySelector("#ape-stat-filtered");
   const statExportable = root.querySelector("#ape-stat-exportable");
 
-  // Load all runs into dropdown
+  // Load all runs via backend RPC
   const loadRuns = async () => {
     runSelect.innerHTML = `<option value="">Loading attack runs...</option>`;
     try {
-      const runs = await fetchAllAutomateRuns(sdk);
+      if (!sdk.backend || typeof sdk.backend.getRuns !== "function") {
+        renderEmpty("Backend RPC not loaded yet. Please install the v1.0.3 package from Plugins menu.");
+        runSelect.innerHTML = `<option value="">(Re-install package required)</option>`;
+        return;
+      }
+
+      const runs = await sdk.backend.getRuns();
       runSelect.innerHTML = "";
 
       if (!runs || runs.length === 0) {
@@ -295,7 +244,7 @@ function buildExtractorUI(sdk) {
   const loadRunDetails = async (runId) => {
     renderEmpty("Loading payloads for selected run...");
     try {
-      activeRequests = await fetchRunRequests(sdk, runId);
+      activeRequests = await sdk.backend.getRunPayloads(runId);
       applyFilterAndRender();
     } catch (err) {
       console.error("[Automate Payload Extractor] Error fetching requests:", err);
@@ -460,105 +409,6 @@ function buildExtractorUI(sdk) {
   loadRuns();
 
   return root;
-}
-
-/**
- * Retrieves all individual attack runs across all Automate sessions via GraphQL.
- */
-async function fetchAllAutomateRuns(sdk) {
-  const query = `
-    query GetAllAutomateSessions {
-      automateSessions {
-        edges {
-          node {
-            id
-            name
-            createdAt
-            entries {
-              id
-              name
-              createdAt
-            }
-          }
-        }
-      }
-    }
-  `;
-
-  const data = await executeGraphQL(sdk, query);
-  const edges = data?.automateSessions?.edges || [];
-  const runs = [];
-
-  edges.forEach((edge) => {
-    const session = edge.node;
-    if (!session) return;
-    const sessionName = session.name || `Session #${session.id}`;
-    const entries = session.entries || [];
-    entries.forEach((entry) => {
-      runs.push({
-        id: entry.id,
-        name: entry.name || `Run #${entry.id}`,
-        sessionName: sessionName,
-        createdAt: entry.createdAt || 0
-      });
-    });
-  });
-
-  // Sort by newest first
-  runs.sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
-  return runs;
-}
-
-/**
- * Retrieves and decodes all requests & payloads for a specific attack run.
- */
-async function fetchRunRequests(sdk, runId) {
-  const query = `
-    query GetAutomateEntryRequests($id: ID!) {
-      automateEntry(id: $id) {
-        id
-        name
-        requests(first: 5000) {
-          edges {
-            node {
-              sequenceId
-              payloads {
-                raw
-              }
-              request {
-                id
-                response {
-                  statusCode
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  `;
-
-  const data = await executeGraphQL(sdk, query, { id: runId });
-  const edges = data?.automateEntry?.requests?.edges || [];
-  const parsed = [];
-
-  edges.forEach((edge) => {
-    const node = edge.node;
-    if (!node) return;
-    const rawPayload = node.payloads?.[0]?.raw || "";
-    const decodedPayload = decodeBase32Hex(rawPayload);
-    const statusCode = node.request?.response?.statusCode || 0;
-
-    if (decodedPayload) {
-      parsed.push({
-        sequenceId: node.sequenceId,
-        payload: decodedPayload,
-        statusCode: statusCode
-      });
-    }
-  });
-
-  return parsed;
 }
 
 function showToast(sdk, message, variant = "info") {
