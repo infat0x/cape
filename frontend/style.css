@@ -1,0 +1,301 @@
+/**
+ * Automate Payload Extractor - Plugin Styles
+ * Designed to seamlessly blend with Caido's native design system.
+ */
+
+:root {
+  --ape-bg-primary: #12151a;
+  --ape-bg-surface: #1a1e24;
+  --ape-bg-elevated: #222730;
+  --ape-bg-hover: #2b323d;
+  --ape-border-subtle: #2d3440;
+  --ape-border-strong: #3d4656;
+  --ape-text-main: #e6edf3;
+  --ape-text-muted: #8b949e;
+  --ape-accent: #ff6a00;
+  --ape-accent-hover: #ff7d1a;
+  --ape-success: #3fb950;
+  --ape-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.ape-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 1.5rem;
+  background-color: var(--ape-bg-primary);
+  color: var(--ape-text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* Header */
+.ape-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--ape-border-subtle);
+  margin-bottom: 1.5rem;
+}
+
+.ape-title-group h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ape-badge {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  background: rgba(255, 106, 0, 0.15);
+  color: var(--ape-accent);
+  border: 1px solid rgba(255, 106, 0, 0.3);
+  font-weight: 500;
+}
+
+.ape-subtitle {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ape-text-muted);
+}
+
+/* Toolbar & Filters */
+.ape-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--ape-bg-surface);
+  border: 1px solid var(--ape-border-subtle);
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+}
+
+.ape-control-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ape-control-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--ape-text-muted);
+}
+
+.ape-select,
+.ape-input {
+  background: var(--ape-bg-elevated);
+  border: 1px solid var(--ape-border-strong);
+  color: var(--ape-text-main);
+  padding: 0.45rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.ape-select:focus,
+.ape-input:focus {
+  border-color: var(--ape-accent);
+}
+
+.ape-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.ape-btn-primary {
+  background: var(--ape-accent);
+  color: #ffffff;
+}
+
+.ape-btn-primary:hover {
+  background: var(--ape-accent-hover);
+}
+
+.ape-btn-secondary {
+  background: var(--ape-bg-elevated);
+  border-color: var(--ape-border-strong);
+  color: var(--ape-text-main);
+}
+
+.ape-btn-secondary:hover {
+  background: var(--ape-bg-hover);
+  border-color: var(--ape-text-muted);
+}
+
+/* Stats */
+.ape-stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.ape-stat-card {
+  padding: 0.85rem 1rem;
+  background: var(--ape-bg-surface);
+  border: 1px solid var(--ape-border-subtle);
+  border-radius: 8px;
+}
+
+.ape-stat-title {
+  font-size: 0.75rem;
+  color: var(--ape-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.ape-stat-value {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--ape-text-main);
+  font-family: var(--ape-font-mono);
+}
+
+/* Results View */
+.ape-results-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--ape-bg-surface);
+  border: 1px solid var(--ape-border-subtle);
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 300px;
+}
+
+.ape-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: var(--ape-bg-elevated);
+  border-bottom: 1px solid var(--ape-border-subtle);
+}
+
+.ape-results-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ape-text-main);
+}
+
+.ape-results-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.ape-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0;
+  margin: 0;
+  list-style: none;
+  font-family: var(--ape-font-mono);
+  font-size: 0.85rem;
+}
+
+.ape-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  transition: background 0.1s ease;
+}
+
+.ape-list-item:hover {
+  background: var(--ape-bg-elevated);
+}
+
+.ape-item-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ape-item-index {
+  color: var(--ape-text-muted);
+  font-size: 0.75rem;
+  width: 2.5rem;
+  text-align: right;
+  user-select: none;
+}
+
+.ape-item-payload {
+  color: #79c0ff;
+  font-weight: 500;
+}
+
+.ape-status-pill {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  background: rgba(63, 185, 80, 0.15);
+  color: var(--ape-success);
+  border: 1px solid rgba(63, 185, 80, 0.3);
+  font-family: var(--ape-font-mono);
+}
+
+.ape-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 1rem;
+  color: var(--ape-text-muted);
+  text-align: center;
+}
+
+.ape-empty-state svg {
+  width: 42px;
+  height: 42px;
+  margin-bottom: 1rem;
+  opacity: 0.4;
+}
+
+/* Footer & Tips */
+.ape-footer-tips {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--ape-border-subtle);
+  font-size: 0.8rem;
+  color: var(--ape-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ape-kbd {
+  background: var(--ape-bg-elevated);
+  border: 1px solid var(--ape-border-strong);
+  border-radius: 4px;
+  padding: 0.15rem 0.4rem;
+  font-family: var(--ape-font-mono);
+  font-size: 0.75rem;
+  color: var(--ape-text-main);
+}
