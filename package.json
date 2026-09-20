@@ -1,0 +1,25 @@
+{
+  "name": "caido-automate-payload-extractor",
+  "version": "1.0.0",
+  "description": "A high-performance, lightweight Caido plugin for extracting and copying Automate payloads directly to clipboard and custom wordlists.",
+  "keywords": [
+    "caido",
+    "caido-plugin",
+    "automate",
+    "payloads",
+    "security",
+    "pentest",
+    "bugbounty"
+  ],
+  "author": "Infat",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "python3 scripts/package.py",
+    "package": "python3 scripts/package.py"
+  },
+  "devDependencies": {
+    "@caido/sdk-frontend": "^0.44.0",
+    "typescript": "^5.4.0"
+  }
+}
