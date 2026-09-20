@@ -4,16 +4,16 @@
  */
 
 :root {
-  /* Neutral Dark Palette strictly within rgba(36, 39, 45) to rgba(49, 51, 58) */
-  --caido-bg-app: #24272d;             /* rgba(36, 39, 45, 1) - base canvas */
-  --caido-bg-panel: #282b31;           /* rgba(40, 43, 49, 1) - toolbars and headers */
-  --caido-bg-surface: #2c2f36;         /* rgba(44, 47, 54, 1) - inputs and buttons */
-  --caido-bg-surface-hover: #31333a;   /* rgba(49, 51, 58, 1) - button hover and toggle active */
-  --caido-bg-hover: #2b2e34;           /* rgba(43, 46, 52, 1) - row hover */
-  --caido-bg-selected: #31333a;        /* rgba(49, 51, 58, 1) - selected row */
-  --caido-border: #31333a;             /* rgba(49, 51, 58, 1) - primary borders */
-  --caido-border-subtle: #292c32;      /* rgba(41, 44, 50, 1) - subtle table row dividers */
-  --caido-border-strong: #383b43;      /* outer borders */
+  /* Main Background is strictly #31333a, with darker tones for toolbars/surfaces */
+  --caido-bg-app: #31333a;             /* Main background as requested */
+  --caido-bg-panel: #272930;           /* Darker tone for toolbars and headers */
+  --caido-bg-surface: #24262d;         /* Darker tone for inputs and secondary surfaces */
+  --caido-bg-surface-hover: #3d4049;   /* Hover state */
+  --caido-bg-hover: #3c404b;           /* Row hover */
+  --caido-bg-selected: #4a4d56;        /* Selected row */
+  --caido-border: #26282f;             /* Darker tone for borders */
+  --caido-border-subtle: #24262d;      /* Subtle dividers */
+  --caido-border-strong: #3d404a;      /* Outer borders */
   --caido-border-focus: #f0642f;
 
   /* Typography */
@@ -234,7 +234,8 @@
 }
 
 .ape-table th {
-  padding: 5px 8px;
+  position: relative;
+  padding: 5px 12px 5px 8px;
   text-align: left;
   font-weight: 500;
   color: var(--caido-text-muted);
@@ -245,6 +246,7 @@
   font-size: 11px;
   cursor: pointer;
   transition: color 0.1s ease;
+  overflow: visible;
 }
 
 .ape-table th:hover {
@@ -253,6 +255,24 @@
 
 .ape-table th:last-child {
   border-right: none;
+}
+
+/* Draggable Column Resizer Handle */
+.ape-col-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 7px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 10;
+  transition: background-color 0.1s ease;
+}
+
+.ape-col-resizer:hover,
+.ape-col-resizer.resizing {
+  background-color: var(--caido-accent);
 }
 
 .ape-table td {
@@ -274,24 +294,33 @@
   border-right: none;
 }
 
+/* Table Row Zebra Striping: alternating dark-light as shown in user reference */
 .ape-table tbody tr {
   cursor: pointer;
-  background-color: var(--caido-bg-app);
   transition: background-color 0.05s ease;
 }
 
-.ape-table tbody tr:hover {
-  background-color: var(--caido-bg-hover);
+.ape-table tbody tr:nth-child(even) {
+  background-color: #31333a;
 }
 
-/* Selected row strictly matches Caido: clean uniform background highlight */
+.ape-table tbody tr:nth-child(odd) {
+  background-color: #353942;
+}
+
+.ape-table tbody tr:hover {
+  background-color: #3c404b;
+}
+
+/* Selected row strictly matches Caido screenshot: highlighted background and left orange accent bar */
 .ape-table tbody tr.ape-selected-row {
-  background-color: var(--caido-bg-selected);
-  color: var(--caido-text-bright);
+  background-color: #4a4d56 !important;
+  box-shadow: inset 3px 0 0 var(--caido-accent);
+  color: #ffffff !important;
 }
 
 .ape-table tbody tr.ape-selected-row td {
-  color: var(--caido-text-bright);
+  color: #ffffff !important;
 }
 
 /* Column Widths (matching Caido Automate screenshot) */
