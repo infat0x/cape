@@ -324,7 +324,7 @@ function buildExtractorUI(sdk) {
         tr.classList.add("ape-selected-row");
       }
 
-      const methodClass = item.method === "POST" ? "method-post" : "method-get";
+      const methodClass = item.method === "POST" ? "method-post" : "";
       const statusClass = getStatusClass(item.statusCode);
       const statusLabel = item.statusCode != null ? item.statusCode : "-";
       const lengthLabel = item.length != null ? item.length : "-";
@@ -385,10 +385,11 @@ function buildExtractorUI(sdk) {
 
   const renderDetailView = (item) => {
     const isPost = item.method === "POST";
-    const methodBadgeClass = isPost ? "badge-post" : "badge-get";
+    const methodBadgeClass = isPost ? "badge-post" : "badge-method";
     const is200 = item.statusCode === 200;
-    const statusBadgeClass = is200 ? "badge-status-200" : "badge-status-err";
-    const statusLabel = item.statusCode != null ? `${item.statusCode} OK` : "Pending";
+    const isErr = item.statusCode >= 400;
+    const statusBadgeClass = is200 ? "badge-status-200" : (isErr ? "badge-status-err" : "badge-status-other");
+    const statusLabel = item.statusCode != null ? `${item.statusCode}` : "-";
     const fullPath = item.path + (item.query ? `?${item.query}` : "");
     const hostHeader = item.host || "target";
 
