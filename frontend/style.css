@@ -1,25 +1,30 @@
 /**
  * Automate Payload Extractor - Stylesheet
- * Strictly modeled after Caido's native dark table interface.
+ * Faithfully designed after Caido's native interface and split-pane layout.
  */
 
 :root {
-  --caido-bg-app: #0e1117;
+  --caido-bg-app: #0d1017;
   --caido-bg-panel: #121620;
-  --caido-bg-surface: #161b26;
-  --caido-bg-hover: #1b212f;
-  --caido-bg-selected: #222a3b;
-  --caido-border: #1e2432;
-  --caido-border-strong: #2a3344;
+  --caido-bg-surface: #151a26;
+  --caido-bg-surface-elevated: #1a202f;
+  --caido-bg-hover: #192030;
+  --caido-bg-selected: #1f273b;
+  --caido-border: #1e2535;
+  --caido-border-strong: #2a3449;
+  --caido-border-focus: #f0642f;
+  --caido-text-bright: #f0f6fc;
   --caido-text: #c9d1d9;
   --caido-text-muted: #7d8590;
-  --caido-text-bright: #ffffff;
+  --caido-text-dim: #484f58;
   --caido-accent: #f0642f;
   --caido-accent-hover: #fa723d;
+  --caido-accent-dim: rgba(240, 100, 47, 0.15);
   --caido-status-200: #3fb950;
   --caido-status-300: #58a6ff;
   --caido-status-400: #f85149;
-  --caido-status-500: #f85149;
+  --caido-method-get: #79c0ff;
+  --caido-method-post: #ffab70;
   --caido-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --caido-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 }
@@ -37,16 +42,16 @@
   font-size: 12px;
 }
 
-/* Header & Controls Toolbar */
+/* Top Toolbar */
 .ape-toolbar {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  height: 38px;
+  padding: 0 12px;
   background-color: var(--caido-bg-panel);
   border-bottom: 1px solid var(--caido-border);
   flex-shrink: 0;
-  flex-wrap: wrap;
 }
 
 .ape-control-item {
@@ -65,7 +70,7 @@
 }
 
 .ape-select,
-.ape-input {
+.ape-search-input {
   background-color: var(--caido-bg-surface);
   border: 1px solid var(--caido-border-strong);
   border-radius: 4px;
@@ -76,36 +81,38 @@
   padding: 0 8px;
   outline: none;
   box-sizing: border-box;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.12s ease;
 }
 
 .ape-select:focus,
-.ape-input:focus {
+.ape-search-input:focus {
   border-color: var(--caido-accent);
 }
 
 .ape-select {
   cursor: pointer;
+  min-width: 200px;
 }
 
-.ape-input {
-  width: 170px;
-}
-
-.ape-checkbox-label {
+.ape-search-wrapper {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  color: var(--caido-text-muted);
-  cursor: pointer;
-  user-select: none;
+  flex: 1;
+  max-width: 380px;
 }
 
-.ape-checkbox-label input {
-  cursor: pointer;
-  accent-color: var(--caido-accent);
-  margin: 0;
+.ape-search-icon {
+  position: absolute;
+  left: 8px;
+  font-size: 11px;
+  color: var(--caido-text-muted);
+  pointer-events: none;
+}
+
+.ape-search-input {
+  width: 100%;
+  padding-left: 26px;
 }
 
 .ape-spacer {
@@ -132,7 +139,7 @@
 
 .ape-btn-primary {
   background-color: var(--caido-accent);
-  color: var(--caido-text-bright);
+  color: #ffffff;
 }
 
 .ape-btn-primary:hover {
@@ -156,10 +163,105 @@
   padding: 0;
 }
 
-/* Table Container */
-.ape-table-wrapper {
+/* Applied Filters Bar (Under Toolbar, Caido Style) */
+.ape-filters-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background-color: var(--caido-bg-panel);
+  border-bottom: 1px solid var(--caido-border);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.ape-filters-label {
+  color: var(--caido-text-muted);
+  font-weight: 500;
+  margin-right: 2px;
+}
+
+.ape-filter-chip {
+  padding: 2px 8px;
+  border-radius: 3px;
+  background-color: transparent;
+  border: 1px solid var(--caido-border);
+  color: var(--caido-text-muted);
+  cursor: pointer;
+  font-family: var(--caido-font-sans);
+  font-size: 11px;
+  user-select: none;
+  transition: all 0.12s ease;
+}
+
+.ape-filter-chip:hover {
+  background-color: var(--caido-bg-hover);
+  color: var(--caido-text);
+}
+
+.ape-filter-chip.active {
+  background-color: var(--caido-accent-dim);
+  border-color: var(--caido-accent);
+  color: var(--caido-accent);
+  font-weight: 500;
+}
+
+.ape-filter-chip.chip-200.active {
+  background-color: rgba(63, 185, 80, 0.15);
+  border-color: rgba(63, 185, 80, 0.4);
+  color: var(--caido-status-200);
+}
+
+.ape-filter-chip.chip-3xx.active {
+  background-color: rgba(88, 166, 255, 0.15);
+  border-color: rgba(88, 166, 255, 0.4);
+  color: var(--caido-status-300);
+}
+
+.ape-filter-chip.chip-4xx.active {
+  background-color: rgba(248, 81, 73, 0.15);
+  border-color: rgba(248, 81, 73, 0.4);
+  color: var(--caido-status-400);
+}
+
+.ape-filter-sep {
+  height: 14px;
+  width: 1px;
+  background-color: var(--caido-border-strong);
+  margin: 0 4px;
+}
+
+.ape-checkbox-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--caido-text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  user-select: none;
+  margin-left: auto;
+}
+
+.ape-checkbox-chip input {
+  margin: 0;
+  accent-color: var(--caido-accent);
+  cursor: pointer;
+}
+
+/* Master-Detail Split Pane */
+.ape-workspace {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Top: Payloads Table */
+.ape-table-pane {
   flex: 1;
   overflow: auto;
+  min-height: 140px;
   background-color: var(--caido-bg-app);
 }
 
@@ -178,7 +280,7 @@
 }
 
 .ape-table th {
-  padding: 6px 10px;
+  padding: 5px 8px;
   text-align: left;
   font-weight: 500;
   color: var(--caido-text-muted);
@@ -194,7 +296,7 @@
 }
 
 .ape-table td {
-  padding: 4px 10px;
+  padding: 3px 8px;
   border-bottom: 1px solid var(--caido-border);
   border-right: 1px solid var(--caido-border);
   color: var(--caido-text);
@@ -202,7 +304,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   vertical-align: middle;
-  height: 26px;
+  height: 25px;
   box-sizing: border-box;
 }
 
@@ -212,20 +314,34 @@
 
 .ape-table tbody tr {
   cursor: pointer;
-  transition: background-color 0.08s ease;
+  position: relative;
+  transition: background-color 0.06s ease;
 }
 
 .ape-table tbody tr:hover {
   background-color: var(--caido-bg-hover);
 }
 
-.ape-table tbody tr.ape-row-selected {
+/* Selected row style strictly matching Caido's amber left bar */
+.ape-table tbody tr.ape-selected-row {
   background-color: var(--caido-bg-selected);
+  box-shadow: inset 3px 0 0 var(--caido-accent);
 }
 
-/* Column Specifics */
 .col-id {
   width: 55px;
+  font-family: var(--caido-font-mono);
+  color: var(--caido-text-muted);
+}
+
+.col-method {
+  width: 60px;
+  font-family: var(--caido-font-mono);
+  font-weight: 500;
+}
+
+.col-path {
+  width: 220px;
   font-family: var(--caido-font-mono);
   color: var(--caido-text-muted);
 }
@@ -233,21 +349,24 @@
 .col-payload {
   font-family: var(--caido-font-mono);
   color: var(--caido-text-bright);
+  font-weight: 500;
 }
 
 .col-status {
-  width: 70px;
+  width: 65px;
   font-family: var(--caido-font-mono);
 }
 
 .col-length {
-  width: 85px;
+  width: 75px;
   font-family: var(--caido-font-mono);
+  color: var(--caido-text-muted);
 }
 
 .col-time {
-  width: 95px;
+  width: 85px;
   font-family: var(--caido-font-mono);
+  color: var(--caido-text-muted);
 }
 
 .col-action {
@@ -255,47 +374,189 @@
   text-align: center;
 }
 
-/* Status Code Coloring */
-.status-200,
-.status-2xx {
-  color: var(--caido-status-200);
-}
+.status-200 { color: var(--caido-status-200); }
+.status-300 { color: var(--caido-status-300); }
+.status-400, .status-500 { color: var(--caido-status-400); }
+.status-none { color: var(--caido-text-muted); }
 
-.status-3xx {
-  color: var(--caido-status-300);
-}
+.method-get { color: var(--caido-method-get); }
+.method-post { color: var(--caido-method-post); }
 
-.status-4xx,
-.status-5xx {
-  color: var(--caido-status-400);
-}
-
-.status-none {
-  color: var(--caido-text-muted);
-}
-
-/* Quick Copy Mini Button */
 .ape-row-copy-btn {
   background: transparent;
   border: none;
   color: var(--caido-text-muted);
   cursor: pointer;
-  padding: 2px 6px;
+  padding: 2px 5px;
   border-radius: 3px;
   font-size: 11px;
 }
 
 .ape-row-copy-btn:hover {
-  background-color: var(--caido-bg-surface);
+  background-color: var(--caido-bg-surface-elevated);
   color: var(--caido-text-bright);
 }
 
-/* Empty & Loading Message */
-.ape-empty-row td {
+.ape-empty-message {
   text-align: center;
-  padding: 40px 10px;
+  padding: 48px 16px;
   color: var(--caido-text-muted);
-  font-style: normal;
+}
+
+/* Splitter Divider */
+.ape-splitter {
+  height: 5px;
+  background-color: var(--caido-bg-panel);
+  border-top: 1px solid var(--caido-border);
+  border-bottom: 1px solid var(--caido-border);
+  cursor: row-resize;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.ape-splitter::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 1px;
+  background-color: var(--caido-border-strong);
+}
+
+/* Bottom: Detail Pane */
+.ape-detail-pane {
+  height: 220px;
+  background-color: var(--caido-bg-app);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.ape-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px;
+  background-color: var(--caido-bg-panel);
+  border-bottom: 1px solid var(--caido-border);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.ape-badge {
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-family: var(--caido-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge-get {
+  background-color: rgba(56, 139, 253, 0.15);
+  color: var(--caido-method-get);
+  border: 1px solid rgba(56, 139, 253, 0.3);
+}
+
+.badge-post {
+  background-color: rgba(210, 153, 34, 0.15);
+  color: var(--caido-method-post);
+  border: 1px solid rgba(210, 153, 34, 0.3);
+}
+
+.badge-status-200 {
+  background-color: rgba(63, 185, 80, 0.15);
+  color: var(--caido-status-200);
+  border: 1px solid rgba(63, 185, 80, 0.3);
+}
+
+.badge-status-err {
+  background-color: rgba(248, 81, 73, 0.15);
+  color: var(--caido-status-400);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+}
+
+.ape-detail-title {
+  font-family: var(--caido-font-mono);
+  color: var(--caido-text-bright);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 450px;
+}
+
+.ape-detail-meta {
+  color: var(--caido-text-muted);
+  font-size: 11px;
+  font-family: var(--caido-font-mono);
+  margin-left: auto;
+  margin-right: 8px;
+}
+
+.ape-detail-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.ape-detail-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--caido-border);
+  overflow: hidden;
+}
+
+.ape-detail-column:last-child {
+  border-right: none;
+}
+
+.ape-detail-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 24px;
+  padding: 0 10px;
+  background-color: var(--caido-bg-surface);
+  border-bottom: 1px solid var(--caido-border);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--caido-text-muted);
+}
+
+.ape-code-viewer {
+  flex: 1;
+  overflow: auto;
+  padding: 8px 10px;
+  margin: 0;
+  background-color: var(--caido-bg-app);
+  font-family: var(--caido-font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--caido-text);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.ape-empty-detail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--caido-text-muted);
+  gap: 8px;
+}
+
+.ape-empty-detail svg {
+  width: 38px;
+  height: 38px;
+  opacity: 0.25;
 }
 
 /* Bottom Status Bar */
@@ -303,7 +564,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 26px;
+  height: 24px;
   padding: 0 12px;
   background-color: var(--caido-bg-panel);
   border-top: 1px solid var(--caido-border);
@@ -315,13 +576,13 @@
 .ape-statusbar-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .ape-statusbar-right {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
 .ape-kbd {

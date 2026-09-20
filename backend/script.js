@@ -77,6 +77,10 @@ export function init(sdk) {
                   }
                   request {
                     id
+                    host
+                    path
+                    query
+                    method
                     response {
                       statusCode
                       length
@@ -125,12 +129,17 @@ export function init(sdk) {
         }
 
         const primaryPayload = decodedList.join("\t");
-        const resp = node.request?.response;
+        const req = node.request;
+        const resp = req?.response;
 
         results.push({
           id: Number(node.sequenceId),
           payload: primaryPayload,
           payloads: decodedList,
+          host: req?.host || "",
+          path: req?.path || "",
+          query: req?.query || "",
+          method: req?.method || "GET",
           statusCode: resp?.statusCode ?? null,
           length: resp?.length ?? null,
           roundtripTime: resp?.roundtripTime ?? null
