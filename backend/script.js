@@ -1,12 +1,11 @@
 /**
- * Automate Payload Extractor - Backend RPC Handler
- * Runs inside Caido's QuickJS runtime with full backend SDK access.
+ * Automate Payload Extractor - Backend Plugin
+ * Handles GraphQL communication with Caido core and exposes RPC methods to the frontend.
  */
 
 export function init(sdk) {
   console.log("[Automate Payload Extractor] Backend initialized.");
 
-  // Expose getRuns to the frontend via RPC
   sdk.api.register("getRuns", async () => {
     try {
       const query = `
@@ -35,46 +34,53 @@ export function init(sdk) {
       edges.forEach((edge) => {
         const session = edge.node;
         if (!session) return;
-        const sessionName = session.name || `Session #${session.id}`;
+        const sessionName = session.name || ("Session #" + session.id);
         const entries = session.entries || [];
         entries.forEach((entry) => {
           runs.push({
-            id: entry.id,
-            name: entry.name || `Run #${entry.id}`,
+            id: String(entry.id),
+            name: entry.name || ("Run #" + entry.id),
             sessionName: sessionName,
             createdAt: entry.createdAt || 0
           });
         });
       });
 
-      // Sort newest first
       runs.sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
       return runs;
     } catch (err) {
-      console.error("[Automate Payload Extractor Backend] getRuns error:", err);
+      console.error("[Automate Payload Extractor] getRuns error:", err);
       throw err;
     }
   });
 
-  // Expose getRunPayloads to the frontend via RPC
-  sdk.api.register("getRunPayloads", async (runId) => {
+  sdk.api.register("getRunPayloads", async (...args) => {
+    const runId = extractTargetId(args);
+    if (!runId) {
+      console.warn("[Automate Payload Extractor] No runId provided to getRunPayloads");
+      return [];
+    }
+
     try {
       const query = `
-        query GetAutomateEntryRequests($id: ID!) {
+        query GetAutomateEntryRequests($id: ID!, $limit: Int, $offset: Int) {
           automateEntry(id: $id) {
             id
             name
-            requests(first: 5000) {
+            requestsByOffset(limit: $limit, offset: $offset) {
               edges {
                 node {
                   sequenceId
                   payloads {
+                    position
                     raw
                   }
                   request {
                     id
                     response {
                       statusCode
+                      length
+                      roundtripTime
                     }
                   }
                 }
@@ -84,82 +90,86 @@ export function init(sdk) {
         }
       `;
 
-      const response = await sdk.graphql.execute(query, { id: runId });
-      const edges = response?.data?.automateEntry?.requests?.edges || [];
-      const parsed = [];
+      const pageSize = 5000;
+      let offset = 0;
+      let allEdges = [];
 
-      edges.forEach((edge) => {
-        const node = edge.node;
-        if (!node) return;
-        const rawPayload = node.payloads?.[0]?.raw || "";
-        const decoded = decodeBase32Hex(rawPayload);
-        const statusCode = node.request?.response?.statusCode || 0;
+      while (true) {
+        const response = await sdk.graphql.execute(query, {
+          id: String(runId),
+          limit: pageSize,
+          offset: offset
+        });
 
-        if (decoded) {
-          parsed.push({
-            sequenceId: node.sequenceId,
-            payload: decoded,
-            statusCode: statusCode
-          });
+        const entry = response?.data?.automateEntry;
+        const edges = entry?.requestsByOffset?.edges || [];
+        if (edges.length === 0) break;
+
+        allEdges = allEdges.concat(edges);
+        if (edges.length < pageSize) break;
+        offset += pageSize;
+      }
+
+      const results = [];
+      for (let i = 0; i < allEdges.length; i++) {
+        const node = allEdges[i].node;
+        if (!node) continue;
+
+        const rawList = node.payloads || [];
+        const decodedList = [];
+        for (let j = 0; j < rawList.length; j++) {
+          const rawItem = rawList[j]?.raw;
+          if (rawItem) {
+            decodedList.push(decodeBase64(rawItem));
+          }
         }
-      });
 
-      return parsed;
+        const primaryPayload = decodedList.join("\t");
+        const resp = node.request?.response;
+
+        results.push({
+          id: Number(node.sequenceId),
+          payload: primaryPayload,
+          payloads: decodedList,
+          statusCode: resp?.statusCode ?? null,
+          length: resp?.length ?? null,
+          roundtripTime: resp?.roundtripTime ?? null
+        });
+      }
+
+      results.sort((a, b) => a.id - b.id);
+      return results;
     } catch (err) {
-      console.error("[Automate Payload Extractor Backend] getRunPayloads error:", err);
+      console.error("[Automate Payload Extractor] getRunPayloads error:", err);
       throw err;
     }
   });
 }
 
-/**
- * Universal RFC 4648 Base32hex decoder without external dependencies.
- */
-function decodeBase32Hex(input) {
-  if (!input || typeof input !== "string") return "";
-  const clean = input.replace(/=+$/, "").toUpperCase();
-  const alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
-
-  for (let i = 0; i < clean.length; i++) {
-    if (alphabet.indexOf(clean[i]) === -1) {
-      return input;
+function extractTargetId(args) {
+  for (let i = 0; i < args.length; i++) {
+    const item = args[i];
+    if (typeof item === "string" || typeof item === "number") {
+      return String(item);
+    }
+    if (item && typeof item === "object") {
+      if (item.id != null) return String(item.id);
+      if (item.runId != null) return String(item.runId);
     }
   }
-
-  let bitString = "";
-  for (let i = 0; i < clean.length; i++) {
-    const val = alphabet.indexOf(clean[i]);
-    bitString += val.toString(2).padStart(5, "0");
-  }
-
-  const bytes = [];
-  for (let i = 0; i + 8 <= bitString.length; i += 8) {
-    bytes.push(parseInt(bitString.substr(i, 8), 2));
-  }
-
-  return utf8BytesToString(bytes) || input;
+  return null;
 }
 
-/**
- * Pure JavaScript UTF-8 byte array to string converter (compatible with QuickJS).
- */
-function utf8BytesToString(bytes) {
-  let out = "";
-  let i = 0;
-  while (i < bytes.length) {
-    const c = bytes[i++];
-    if (c < 128) {
-      out += String.fromCharCode(c);
-    } else if (c > 191 && c < 224) {
-      const c2 = bytes[i++];
-      out += String.fromCharCode(((c & 31) << 6) | (c2 & 63));
-    } else if (c > 223 && c < 240) {
-      const c2 = bytes[i++];
-      const c3 = bytes[i++];
-      out += String.fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
-    } else {
-      out += String.fromCharCode(c);
+function decodeBase64(raw) {
+  if (!raw || typeof raw !== "string") return "";
+  try {
+    const bin = atob(raw);
+    try {
+      return decodeURIComponent(escape(bin));
+    } catch (_) {
+      return bin;
     }
+  } catch (_) {
+    return raw;
   }
-  return out;
 }

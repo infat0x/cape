@@ -1,20 +1,11 @@
 /**
- * Automate Payload Extractor
- * Frontend UI Component calling the Backend RPC Bridge.
- *
- * @author Infat
- * @license MIT
+ * Automate Payload Extractor - Frontend Plugin
+ * High density table UI matching Caido native interface.
  */
 
-/**
- * Main plugin initialization entrypoint called by Caido.
- *
- * @param {import("@caido/sdk-frontend").Caido} sdk
- */
 export const init = (sdk) => {
-  console.log("[Automate Payload Extractor] Frontend initialized v1.0.3");
+  console.log("[Automate Payload Extractor] Frontend initialized.");
 
-  // Register command in Caido's Command Palette (Ctrl+K / Cmd+K)
   if (sdk.commands && typeof sdk.commands.register === "function") {
     sdk.commands.register("automate-payload-extractor.quick-copy", {
       name: "Automate: Quick Copy 200 OK Payloads",
@@ -24,41 +15,34 @@ export const init = (sdk) => {
     });
   }
 
-  // Register global shortcut (Ctrl+Shift+C / Cmd+Shift+C)
   if (sdk.shortcuts && typeof sdk.shortcuts.register === "function") {
     try {
       sdk.shortcuts.register("automate-payload-extractor.quick-copy", ["Control", "Shift", "C"]);
     } catch (e) {
-      console.debug("[Automate Payload Extractor] Shortcut registration optional:", e);
+      console.debug("[Automate Payload Extractor] Shortcut registration error:", e);
     }
   }
 
-  // Build the dedicated UI view
   const pageContainer = buildExtractorUI(sdk);
-
-  // Register the dedicated page in Caido navigation
   const PAGE_PATH = "/automate-payload-extractor";
+
   if (sdk.navigation && typeof sdk.navigation.addPage === "function") {
     sdk.navigation.addPage(PAGE_PATH, {
       body: pageContainer
     });
   }
 
-  // Add an item to Caido's sidebar
   if (sdk.sidebar && typeof sdk.sidebar.registerItem === "function") {
     sdk.sidebar.registerItem("Payload Extractor", PAGE_PATH, {
-      icon: "fas fa-clone"
+      icon: "fas fa-table"
     });
   }
 };
 
-/**
- * Fast action triggered from keyboard shortcut or command palette.
- */
 async function quickCopyLastSuccessful(sdk) {
   try {
     if (!sdk.backend || typeof sdk.backend.getRuns !== "function") {
-      showToast(sdk, "Backend RPC not available. Please reinstall plugin package.", "error");
+      showToast(sdk, "Backend RPC is not available.", "error");
       return;
     }
 
@@ -69,64 +53,45 @@ async function quickCopyLastSuccessful(sdk) {
     }
 
     const latestRun = runs[0];
-    const requests = await sdk.backend.getRunPayloads(latestRun.id);
+    const items = await sdk.backend.getRunPayloads(latestRun.id);
 
-    const successfulPayloads = requests
-      .filter((r) => r.statusCode === 200)
-      .map((r) => r.payload)
-      .filter(Boolean);
+    const successfulPayloads = items
+      .filter((r) => r.statusCode === 200 && r.payload)
+      .map((r) => r.payload);
 
     if (successfulPayloads.length === 0) {
-      showToast(sdk, `No HTTP 200 payloads in run: ${latestRun.name}`, "info");
+      showToast(sdk, "No HTTP 200 payloads found in run: " + latestRun.name, "info");
       return;
     }
 
     const uniqueList = Array.from(new Set(successfulPayloads));
     await navigator.clipboard.writeText(uniqueList.join("\n"));
-    showToast(sdk, `Copied ${uniqueList.length} payload(s) from "${latestRun.name}"!`, "success");
+    showToast(sdk, "Copied " + uniqueList.length + " payload(s) from " + latestRun.name, "success");
   } catch (err) {
     console.error("[Automate Payload Extractor] Quick copy failed:", err);
     showToast(sdk, "Failed to copy payloads: " + err.message, "error");
   }
 }
 
-/**
- * Builds the interactive DOM interface for the dedicated plugin tab.
- */
 function buildExtractorUI(sdk) {
   const root = document.createElement("div");
-  root.className = "ape-container";
+  root.className = "ape-app";
 
-  let activeRequests = [];
-  let currentFilteredList = [];
+  let rawRequests = [];
+  let filteredRequests = [];
 
   root.innerHTML = `
-    <header class="ape-header">
-      <div class="ape-title-group">
-        <h1>
-          <span>Automate Payload Extractor</span>
-          <span class="ape-badge">v1.0.3</span>
-        </h1>
-        <p class="ape-subtitle">Extract, filter, and export payload columns from any Automate run.</p>
-      </div>
-      <div>
-        <button id="ape-refresh-btn" class="ape-btn ape-btn-secondary">
-          <i class="fas fa-sync-alt"></i> Refresh Runs
-        </button>
-      </div>
-    </header>
-
-    <section class="ape-toolbar">
-      <div class="ape-control-group">
-        <label class="ape-control-label" for="ape-run-select">Attack Run:</label>
-        <select id="ape-run-select" class="ape-select" style="min-width: 250px;">
+    <div class="ape-toolbar">
+      <div class="ape-control-item">
+        <label class="ape-label" for="ape-run-select">Run:</label>
+        <select id="ape-run-select" class="ape-select" style="min-width: 220px;">
           <option value="">Loading attack runs...</option>
         </select>
       </div>
 
-      <div class="ape-control-group">
-        <label class="ape-control-label" for="ape-status-filter">Status:</label>
-        <select id="ape-status-filter" class="ape-select">
+      <div class="ape-control-item">
+        <label class="ape-label" for="ape-status-select">Status:</label>
+        <select id="ape-status-select" class="ape-select">
           <option value="all">All Responses</option>
           <option value="200" selected>200 OK Only</option>
           <option value="2xx">2xx Success</option>
@@ -136,81 +101,82 @@ function buildExtractorUI(sdk) {
         </select>
       </div>
 
-      <div class="ape-control-group">
-        <label class="ape-control-label" for="ape-search-filter">Search:</label>
-        <input type="text" id="ape-search-filter" class="ape-input" placeholder="Search payloads..." />
+      <div class="ape-control-item">
+        <input type="text" id="ape-search-input" class="ape-input" placeholder="Search payloads..." />
       </div>
 
-      <div class="ape-control-group" style="margin-left: auto;">
-        <label class="ape-control-label" style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer;">
-          <input type="checkbox" id="ape-dedupe-toggle" checked /> Deduplicate
+      <div class="ape-control-item">
+        <label class="ape-checkbox-label">
+          <input type="checkbox" id="ape-dedupe-toggle" checked />
+          <span>Deduplicate</span>
         </label>
       </div>
-    </section>
 
-    <div class="ape-stats-row">
-      <div class="ape-stat-card">
-        <div class="ape-stat-title">Total Requests</div>
-        <div class="ape-stat-value" id="ape-stat-total">0</div>
-      </div>
-      <div class="ape-stat-card">
-        <div class="ape-stat-title">Status Filter Matches</div>
-        <div class="ape-stat-value" id="ape-stat-filtered">0</div>
-      </div>
-      <div class="ape-stat-card">
-        <div class="ape-stat-title">Ready to Copy / Export</div>
-        <div class="ape-stat-value" id="ape-stat-exportable" style="color: var(--ape-accent);">0</div>
-      </div>
+      <div class="ape-spacer"></div>
+
+      <button id="ape-copy-btn" class="ape-btn ape-btn-primary" title="Copy visible payloads to clipboard">
+        <i class="fas fa-copy"></i>
+        <span>Copy Payloads</span>
+      </button>
+
+      <button id="ape-export-btn" class="ape-btn ape-btn-secondary" title="Export visible payloads as .txt wordlist">
+        <i class="fas fa-download"></i>
+        <span>Export .txt</span>
+      </button>
+
+      <button id="ape-refresh-btn" class="ape-btn ape-btn-secondary ape-btn-icon" title="Refresh runs">
+        <i class="fas fa-sync-alt"></i>
+      </button>
     </div>
 
-    <main class="ape-results-wrapper">
-      <div class="ape-results-header">
-        <div class="ape-results-title">Extracted Payloads</div>
-        <div class="ape-results-actions">
-          <button id="ape-copy-btn" class="ape-btn ape-btn-primary">
-            <i class="fas fa-copy"></i> Copy to Clipboard
-          </button>
-          <button id="ape-download-btn" class="ape-btn ape-btn-secondary">
-            <i class="fas fa-download"></i> Save as Wordlist (.txt)
-          </button>
-        </div>
+    <div class="ape-table-wrapper">
+      <table class="ape-table">
+        <thead>
+          <tr>
+            <th class="col-id">ID</th>
+            <th class="col-payload">Payload</th>
+            <th class="col-status">Status</th>
+            <th class="col-length">Length</th>
+            <th class="col-time">Time (ms)</th>
+            <th class="col-action">Copy</th>
+          </tr>
+        </thead>
+        <tbody id="ape-table-body">
+          <tr class="ape-empty-row">
+            <td colspan="6">Loading attack runs...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="ape-statusbar">
+      <div class="ape-statusbar-left" id="ape-status-text">
+        <span>0 requests</span>
       </div>
-
-      <ul id="ape-payload-list" class="ape-list">
-        <li class="ape-empty-state">
-          <i class="fas fa-inbox"></i>
-          <span>Select an Automate attack run above to view payloads.</span>
-        </li>
-      </ul>
-    </main>
-
-    <footer class="ape-footer-tips">
-      <i class="fas fa-lightbulb" style="color: #e3b341;"></i>
-      <span>Tip: Press <kbd class="ape-kbd">Ctrl</kbd> + <kbd class="ape-kbd">Shift</kbd> + <kbd class="ape-kbd">C</kbd> anywhere to quickly copy 200 OK payloads from the latest attack.</span>
-    </footer>
+      <div class="ape-statusbar-right">
+        <span><kbd class="ape-kbd">Ctrl</kbd> + <kbd class="ape-kbd">Shift</kbd> + <kbd class="ape-kbd">C</kbd> quick copy 200 OK</span>
+      </div>
+    </div>
   `;
 
-  // Bind UI elements
   const runSelect = root.querySelector("#ape-run-select");
-  const statusFilter = root.querySelector("#ape-status-filter");
-  const searchFilter = root.querySelector("#ape-search-filter");
+  const statusSelect = root.querySelector("#ape-status-select");
+  const searchInput = root.querySelector("#ape-search-input");
   const dedupeToggle = root.querySelector("#ape-dedupe-toggle");
-  const refreshBtn = root.querySelector("#ape-refresh-btn");
   const copyBtn = root.querySelector("#ape-copy-btn");
-  const downloadBtn = root.querySelector("#ape-download-btn");
-  const payloadList = root.querySelector("#ape-payload-list");
+  const exportBtn = root.querySelector("#ape-export-btn");
+  const refreshBtn = root.querySelector("#ape-refresh-btn");
+  const tableBody = root.querySelector("#ape-table-body");
+  const statusText = root.querySelector("#ape-status-text");
 
-  const statTotal = root.querySelector("#ape-stat-total");
-  const statFiltered = root.querySelector("#ape-stat-filtered");
-  const statExportable = root.querySelector("#ape-stat-exportable");
-
-  // Load all runs via backend RPC
   const loadRuns = async () => {
     runSelect.innerHTML = `<option value="">Loading attack runs...</option>`;
+    setTableMessage("Loading attack runs...");
+
     try {
       if (!sdk.backend || typeof sdk.backend.getRuns !== "function") {
-        renderEmpty("Backend RPC not loaded yet. Please install the v1.0.3 package from Plugins menu.");
-        runSelect.innerHTML = `<option value="">(Re-install package required)</option>`;
+        setTableMessage("Backend RPC connection unavailable. Please ensure plugin is enabled.");
+        runSelect.innerHTML = `<option value="">(RPC unavailable)</option>`;
         return;
       }
 
@@ -218,8 +184,9 @@ function buildExtractorUI(sdk) {
       runSelect.innerHTML = "";
 
       if (!runs || runs.length === 0) {
-        runSelect.innerHTML = `<option value="">(No Automate runs available)</option>`;
-        renderEmpty("No Automate attack runs found in this project.");
+        runSelect.innerHTML = `<option value="">(No Automate runs found)</option>`;
+        setTableMessage("No Automate attack runs found in this project.");
+        updateStatusBar(0, 0, 0);
         return;
       }
 
@@ -227,173 +194,178 @@ function buildExtractorUI(sdk) {
         const option = document.createElement("option");
         option.value = run.id;
         option.textContent = `${run.name} (${run.sessionName})`;
-        if (idx === 0) option.selected = true; // Most recent selected by default
+        if (idx === 0) option.selected = true;
         runSelect.appendChild(option);
       });
 
       if (runSelect.value) {
-        await loadRunDetails(runSelect.value);
+        await loadRunRequests(runSelect.value);
       }
     } catch (err) {
-      console.error("[Automate Payload Extractor] Error loading runs:", err);
-      runSelect.innerHTML = `<option value="">Error loading runs</option>`;
-      renderEmpty("Error loading runs: " + err.message);
+      console.error("[Automate Payload Extractor] Failed to load runs:", err);
+      setTableMessage("Failed to load runs: " + err.message);
     }
   };
 
-  const loadRunDetails = async (runId) => {
-    renderEmpty("Loading payloads for selected run...");
+  const loadRunRequests = async (runId) => {
+    setTableMessage("Loading payloads for selected run...");
+    rawRequests = [];
+    filteredRequests = [];
+    updateStatusBar(0, 0, 0);
+
     try {
-      activeRequests = await sdk.backend.getRunPayloads(runId);
-      applyFilterAndRender();
+      const items = await sdk.backend.getRunPayloads(runId);
+      rawRequests = Array.isArray(items) ? items : [];
+      applyFiltersAndRender();
     } catch (err) {
-      console.error("[Automate Payload Extractor] Error fetching requests:", err);
-      renderEmpty("Error loading requests: " + err.message);
+      console.error("[Automate Payload Extractor] Failed to load payloads:", err);
+      setTableMessage("Failed to load payloads: " + err.message);
     }
   };
 
-  const applyFilterAndRender = () => {
-    statTotal.textContent = activeRequests.length;
-
-    const statusCodeTarget = statusFilter.value;
-    const searchTerm = (searchFilter.value || "").toLowerCase().trim();
+  const applyFiltersAndRender = () => {
+    const selectedStatus = statusSelect.value;
+    const filterQuery = (searchInput.value || "").toLowerCase().trim();
     const shouldDedupe = dedupeToggle.checked;
 
-    let filtered = activeRequests.filter((item) => {
-      const code = item.statusCode || 0;
+    let list = rawRequests.filter((item) => {
+      const code = item.statusCode;
 
-      // Status code checks
-      if (statusCodeTarget === "200" && code !== 200) return false;
-      if (statusCodeTarget === "2xx" && (code < 200 || code >= 300)) return false;
-      if (statusCodeTarget === "3xx" && (code < 300 || code >= 400)) return false;
-      if (statusCodeTarget === "4xx" && (code < 400 || code >= 500)) return false;
-      if (statusCodeTarget === "5xx" && (code < 500 || code >= 600)) return false;
+      if (selectedStatus === "200" && code !== 200) return false;
+      if (selectedStatus === "2xx" && (code < 200 || code >= 300)) return false;
+      if (selectedStatus === "3xx" && (code < 300 || code >= 400)) return false;
+      if (selectedStatus === "4xx" && (code < 400 || code >= 500)) return false;
+      if (selectedStatus === "5xx" && (code < 500 || code >= 600)) return false;
 
-      // Substring search
-      if (searchTerm && !item.payload.toLowerCase().includes(searchTerm)) return false;
+      if (filterQuery && !item.payload.toLowerCase().includes(filterQuery)) {
+        return false;
+      }
 
       return true;
     });
 
-    statFiltered.textContent = filtered.length;
-
-    let extracted = filtered.map((item) => ({
-      payload: item.payload,
-      statusCode: item.statusCode
-    }));
-
     if (shouldDedupe) {
       const seen = new Set();
-      extracted = extracted.filter((item) => {
+      list = list.filter((item) => {
         if (seen.has(item.payload)) return false;
         seen.add(item.payload);
         return true;
       });
     }
 
-    currentFilteredList = extracted;
-    statExportable.textContent = currentFilteredList.length;
-
-    renderList(currentFilteredList);
+    filteredRequests = list;
+    const uniqueCount = new Set(filteredRequests.map((r) => r.payload)).size;
+    updateStatusBar(rawRequests.length, filteredRequests.length, uniqueCount);
+    renderTableRows(filteredRequests);
   };
 
-  const renderList = (items) => {
-    payloadList.innerHTML = "";
+  const renderTableRows = (items) => {
+    tableBody.innerHTML = "";
+
     if (items.length === 0) {
-      renderEmpty("No payloads matched your filter criteria.");
+      setTableMessage("No payloads matched your filter criteria.");
       return;
     }
 
     const fragment = document.createDocumentFragment();
-    items.forEach((item, index) => {
-      const li = document.createElement("li");
-      li.className = "ape-list-item";
 
-      const left = document.createElement("div");
-      left.className = "ape-item-left";
+    items.forEach((item) => {
+      const tr = document.createElement("tr");
 
-      const idxSpan = document.createElement("span");
-      idxSpan.className = "ape-item-index";
-      idxSpan.textContent = `#${index + 1}`;
+      const statusClass = getStatusClass(item.statusCode);
+      const statusLabel = item.statusCode != null ? item.statusCode : "-";
+      const lengthLabel = item.length != null ? item.length : "-";
+      const timeLabel = item.roundtripTime != null ? item.roundtripTime : "-";
 
-      const payloadSpan = document.createElement("span");
-      payloadSpan.className = "ape-item-payload";
-      payloadSpan.textContent = item.payload;
+      tr.innerHTML = `
+        <td class="col-id">${item.id}</td>
+        <td class="col-payload" title="${escapeHtml(item.payload)}">${escapeHtml(item.payload)}</td>
+        <td class="col-status ${statusClass}">${statusLabel}</td>
+        <td class="col-length">${lengthLabel}</td>
+        <td class="col-time">${timeLabel}</td>
+        <td class="col-action">
+          <button class="ape-row-copy-btn" title="Copy payload">
+            <i class="fas fa-copy"></i>
+          </button>
+        </td>
+      `;
 
-      left.appendChild(idxSpan);
-      left.appendChild(payloadSpan);
+      tr.addEventListener("click", () => {
+        const selected = root.querySelectorAll(".ape-row-selected");
+        selected.forEach((el) => el.classList.remove("ape-row-selected"));
+        tr.classList.add("ape-row-selected");
+      });
 
-      const right = document.createElement("div");
-      right.style.display = "flex";
-      right.style.alignItems = "center";
-      right.style.gap = "0.75rem";
-
-      const pill = document.createElement("span");
-      pill.className = "ape-status-pill";
-      pill.textContent = item.statusCode;
-
-      const singleCopyBtn = document.createElement("button");
-      singleCopyBtn.className = "ape-btn ape-btn-secondary";
-      singleCopyBtn.style.padding = "0.2rem 0.5rem";
-      singleCopyBtn.style.fontSize = "0.75rem";
-      singleCopyBtn.innerHTML = `<i class="fas fa-copy"></i>`;
-      singleCopyBtn.title = "Copy this payload";
-      singleCopyBtn.onclick = async () => {
+      tr.addEventListener("dblclick", async () => {
         await navigator.clipboard.writeText(item.payload);
-        showToast(sdk, "Copied payload to clipboard!", "success");
-      };
+        showToast(sdk, `Copied "${item.payload}" to clipboard.`, "success");
+      });
 
-      right.appendChild(pill);
-      right.appendChild(singleCopyBtn);
+      const copyIconBtn = tr.querySelector(".ape-row-copy-btn");
+      copyIconBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        await navigator.clipboard.writeText(item.payload);
+        showToast(sdk, `Copied "${item.payload}" to clipboard.`, "success");
+      });
 
-      li.appendChild(left);
-      li.appendChild(right);
-      fragment.appendChild(li);
+      fragment.appendChild(tr);
     });
 
-    payloadList.appendChild(fragment);
+    tableBody.appendChild(fragment);
   };
 
-  const renderEmpty = (message) => {
-    payloadList.innerHTML = `
-      <li class="ape-empty-state">
-        <i class="fas fa-info-circle"></i>
-        <span>${escapeHtml(message)}</span>
-      </li>
+  const setTableMessage = (msg) => {
+    tableBody.innerHTML = `
+      <tr class="ape-empty-row">
+        <td colspan="6">${escapeHtml(msg)}</td>
+      </tr>
     `;
   };
 
-  // Event Listeners
+  const updateStatusBar = (total, filtered, unique) => {
+    if (total === 0) {
+      statusText.innerHTML = `<span>0 requests</span>`;
+      return;
+    }
+
+    statusText.innerHTML = `
+      <span>${filtered} requests (filtered from ${total})</span>
+      <span style="opacity: 0.5;">|</span>
+      <span>${unique} unique payloads</span>
+    `;
+  };
+
+  // Event handlers
   runSelect.addEventListener("change", () => {
     if (runSelect.value) {
-      loadRunDetails(runSelect.value);
+      loadRunRequests(runSelect.value);
     }
   });
 
-  statusFilter.addEventListener("change", applyFilterAndRender);
-  searchFilter.addEventListener("input", applyFilterAndRender);
-  dedupeToggle.addEventListener("change", applyFilterAndRender);
+  statusSelect.addEventListener("change", applyFiltersAndRender);
+  searchInput.addEventListener("input", applyFiltersAndRender);
+  dedupeToggle.addEventListener("change", applyFiltersAndRender);
   refreshBtn.addEventListener("click", loadRuns);
 
   copyBtn.addEventListener("click", async () => {
-    if (currentFilteredList.length === 0) {
+    if (filteredRequests.length === 0) {
       showToast(sdk, "No payloads to copy.", "warning");
       return;
     }
 
-    const textToCopy = currentFilteredList.map((x) => x.payload).join("\n");
-    await navigator.clipboard.writeText(textToCopy);
-    showToast(sdk, `Copied ${currentFilteredList.length} payload(s) to clipboard!`, "success");
+    const payloadText = filteredRequests.map((r) => r.payload).join("\n");
+    await navigator.clipboard.writeText(payloadText);
+    showToast(sdk, `Copied ${filteredRequests.length} payload(s) to clipboard.`, "success");
   });
 
-  downloadBtn.addEventListener("click", () => {
-    if (currentFilteredList.length === 0) {
-      showToast(sdk, "No payloads to save.", "warning");
+  exportBtn.addEventListener("click", () => {
+    if (filteredRequests.length === 0) {
+      showToast(sdk, "No payloads to export.", "warning");
       return;
     }
 
-    const textContent = currentFilteredList.map((x) => x.payload).join("\n");
-    const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
+    const payloadText = filteredRequests.map((r) => r.payload).join("\n");
+    const blob = new Blob([payloadText], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -402,13 +374,21 @@ function buildExtractorUI(sdk) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast(sdk, "Downloaded wordlist file.", "success");
+    showToast(sdk, "Saved wordlist to file.", "success");
   });
 
-  // Initial load
   loadRuns();
-
   return root;
+}
+
+function getStatusClass(code) {
+  if (code == null) return "status-none";
+  if (code === 200) return "status-200";
+  if (code >= 200 && code < 300) return "status-2xx";
+  if (code >= 300 && code < 400) return "status-3xx";
+  if (code >= 400 && code < 500) return "status-4xx";
+  if (code >= 500) return "status-5xx";
+  return "status-none";
 }
 
 function showToast(sdk, message, variant = "info") {

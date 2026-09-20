@@ -1,6 +1,6 @@
 {
   "name": "caido-automate-payload-extractor",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "description": "A high-performance, lightweight Caido plugin for extracting and copying Automate payloads directly to clipboard and custom wordlists.",
   "keywords": [
     "caido",
