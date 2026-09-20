@@ -4,6 +4,12 @@ A native plugin for Caido that inspects, filters, and copies payloads from Autom
 
 Designed to replicate and streamline the "Copy column" workflow familiar from tools like Burp Suite Intruder, built with zero external runtime dependencies and tailored for high-volume penetration testing workflows.
 
+<p align="center">
+      <img src="https://img.shields.io/badge/Caido-Plugin-F0642F?style=for-the-badge&logo=caido&logoColor=white" alt="Caido Plugin">
+      <img src="https://img.shields.io/github/v/release/infat0x/cape?style=for-the-badge&color=blue" alt="Release">
+      <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License">
+      <img src="https://img.shields.io/badge/Tested%20on-Linux%20%7C%20Windows%20%7C%20macOS-informational?style=for-the-badge" alt="Platform">
+    </p>
 ---
 
 ## Features
