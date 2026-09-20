@@ -11,6 +11,10 @@ Designed to replicate and streamline the "Copy column" workflow familiar from to
       <img src="https://img.shields.io/badge/Tested%20on-Linux%20%7C%20Windows%20%7C%20macOS-informational?style=for-the-badge" alt="Platform">
 </p>
 
+<p align="center">
+  <img src="assets/screenshot.png" alt="CAPE - Automate Payload Extractor in action" width="100%">
+</p>
+
 ---
 
 ## Features
