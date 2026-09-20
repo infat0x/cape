@@ -13,12 +13,16 @@
       "id": "automate-payload-extractor-frontend",
       "name": "Automate Payload Extractor Frontend",
       "entrypoint": "frontend/script.js",
-      "style": "frontend/style.css"
+      "style": "frontend/style.css",
+      "backend": {
+        "id": "automate-payload-extractor-backend"
+      }
     },
     {
       "kind": "backend",
       "id": "automate-payload-extractor-backend",
       "name": "Automate Payload Extractor Backend",
+      "runtime": "javascript",
       "entrypoint": "backend/script.js"
     }
   ]
