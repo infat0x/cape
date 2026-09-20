@@ -13,7 +13,7 @@
  * @param {import("@caido/sdk-frontend").Caido} sdk
  */
 export const init = (sdk) => {
-  console.log("[Automate Payload Extractor] Initializing plugin v1.0.1...");
+  console.log("[Automate Payload Extractor] Initializing plugin v1.0.2...");
 
   // Register command in Caido's Command Palette (Ctrl+K / Cmd+K)
   if (sdk.commands && typeof sdk.commands.register === "function") {
@@ -54,6 +54,30 @@ export const init = (sdk) => {
 
   console.log("[Automate Payload Extractor] Plugin loaded successfully.");
 };
+
+/**
+ * Executes a GraphQL query against Caido's backend SDK.
+ */
+async function executeGraphQL(sdk, query, variables = {}) {
+  let response;
+  if (sdk.graphql && typeof sdk.graphql.execute === "function") {
+    response = await sdk.graphql.execute(query, variables);
+  } else if (typeof sdk.graphql === "function") {
+    response = await sdk.graphql(query, variables);
+  } else if (sdk.api && typeof sdk.api.graphql === "function") {
+    response = await sdk.api.graphql(query, variables);
+  } else {
+    throw new Error("GraphQL execution method not found on Caido SDK.");
+  }
+
+  if (response && response.data !== undefined) {
+    if (response.errors && response.errors.length > 0) {
+      console.warn("[Automate Payload Extractor] GraphQL returned errors:", response.errors);
+    }
+    return response.data;
+  }
+  return response;
+}
 
 /**
  * RFC 4648 Base32hex decoder used by Caido's internal storage.
@@ -97,11 +121,11 @@ async function quickCopyLastSuccessful(sdk) {
   try {
     const runs = await fetchAllAutomateRuns(sdk);
     if (!runs || runs.length === 0) {
-      showToast(sdk, "No Automate runs found.", "warning");
+      showToast(sdk, "No Automate attack runs found.", "warning");
       return;
     }
 
-    const latestRun = runs[0]; // Most recent run
+    const latestRun = runs[0];
     const requests = await fetchRunRequests(sdk, latestRun.id);
 
     const successfulPayloads = requests
@@ -110,7 +134,7 @@ async function quickCopyLastSuccessful(sdk) {
       .filter(Boolean);
 
     if (successfulPayloads.length === 0) {
-      showToast(sdk, `No HTTP 200 payloads in latest run (${latestRun.name}).`, "info");
+      showToast(sdk, `No HTTP 200 payloads in run: ${latestRun.name}`, "info");
       return;
     }
 
@@ -138,7 +162,7 @@ function buildExtractorUI(sdk) {
       <div class="ape-title-group">
         <h1>
           <span>Automate Payload Extractor</span>
-          <span class="ape-badge">v1.0.1</span>
+          <span class="ape-badge">v1.0.2</span>
         </h1>
         <p class="ape-subtitle">Extract, filter, and export payload columns from any Automate run.</p>
       </div>
@@ -264,7 +288,7 @@ function buildExtractorUI(sdk) {
     } catch (err) {
       console.error("[Automate Payload Extractor] Error loading runs:", err);
       runSelect.innerHTML = `<option value="">Error loading runs</option>`;
-      renderEmpty("Could not load runs: " + err.message);
+      renderEmpty("Error loading runs: " + err.message);
     }
   };
 
@@ -442,74 +466,70 @@ function buildExtractorUI(sdk) {
  * Retrieves all individual attack runs across all Automate sessions via GraphQL.
  */
 async function fetchAllAutomateRuns(sdk) {
-  if (!sdk.graphql) return [];
-
   const query = `
     query GetAllAutomateSessions {
       automateSessions {
-        nodes {
-          id
-          name
-          createdAt
-          entries {
+        edges {
+          node {
             id
             name
             createdAt
+            entries {
+              id
+              name
+              createdAt
+            }
           }
         }
       }
     }
   `;
 
-  try {
-    const res = await sdk.graphql(query);
-    const sessions = res?.data?.automateSessions?.nodes || [];
-    const runs = [];
+  const data = await executeGraphQL(sdk, query);
+  const edges = data?.automateSessions?.edges || [];
+  const runs = [];
 
-    sessions.forEach((session) => {
-      const sessionName = session.name || `Session #${session.id}`;
-      const entries = session.entries || [];
-      entries.forEach((entry) => {
-        runs.push({
-          id: entry.id,
-          name: entry.name || `Run #${entry.id}`,
-          sessionName: sessionName,
-          createdAt: entry.createdAt || 0
-        });
+  edges.forEach((edge) => {
+    const session = edge.node;
+    if (!session) return;
+    const sessionName = session.name || `Session #${session.id}`;
+    const entries = session.entries || [];
+    entries.forEach((entry) => {
+      runs.push({
+        id: entry.id,
+        name: entry.name || `Run #${entry.id}`,
+        sessionName: sessionName,
+        createdAt: entry.createdAt || 0
       });
     });
+  });
 
-    // Sort by newest first
-    runs.sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
-    return runs;
-  } catch (err) {
-    console.error("[Automate Payload Extractor] GraphQL fetchAllAutomateRuns failed:", err);
-    return [];
-  }
+  // Sort by newest first
+  runs.sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
+  return runs;
 }
 
 /**
  * Retrieves and decodes all requests & payloads for a specific attack run.
  */
 async function fetchRunRequests(sdk, runId) {
-  if (!sdk.graphql) return [];
-
   const query = `
     query GetAutomateEntryRequests($id: ID!) {
       automateEntry(id: $id) {
         id
         name
         requests(first: 5000) {
-          nodes {
-            sequenceId
-            payloads {
-              position
-              raw
-            }
-            request {
-              id
-              response {
-                statusCode
+          edges {
+            node {
+              sequenceId
+              payloads {
+                raw
+              }
+              request {
+                id
+                response {
+                  statusCode
+                }
               }
             }
           }
@@ -518,30 +538,27 @@ async function fetchRunRequests(sdk, runId) {
     }
   `;
 
-  try {
-    const res = await sdk.graphql(query, { id: runId });
-    const requestNodes = res?.data?.automateEntry?.requests?.nodes || [];
+  const data = await executeGraphQL(sdk, query, { id: runId });
+  const edges = data?.automateEntry?.requests?.edges || [];
+  const parsed = [];
 
-    const parsed = [];
-    requestNodes.forEach((node) => {
-      const rawPayload = node.payloads?.[0]?.raw || "";
-      const decodedPayload = decodeBase32Hex(rawPayload);
-      const statusCode = node.request?.response?.statusCode || 0;
+  edges.forEach((edge) => {
+    const node = edge.node;
+    if (!node) return;
+    const rawPayload = node.payloads?.[0]?.raw || "";
+    const decodedPayload = decodeBase32Hex(rawPayload);
+    const statusCode = node.request?.response?.statusCode || 0;
 
-      if (decodedPayload) {
-        parsed.push({
-          sequenceId: node.sequenceId,
-          payload: decodedPayload,
-          statusCode: statusCode
-        });
-      }
-    });
+    if (decodedPayload) {
+      parsed.push({
+        sequenceId: node.sequenceId,
+        payload: decodedPayload,
+        statusCode: statusCode
+      });
+    }
+  });
 
-    return parsed;
-  } catch (err) {
-    console.error("[Automate Payload Extractor] GraphQL fetchRunRequests failed:", err);
-    return [];
-  }
+  return parsed;
 }
 
 function showToast(sdk, message, variant = "info") {
