@@ -324,7 +324,7 @@ function buildExtractorUI(sdk) {
         tr.classList.add("ape-selected-row");
       }
 
-      const methodClass = item.method === "POST" ? "method-post" : "";
+      const methodClass = item.method === "POST" ? "method-post" : "method-get";
       const statusClass = getStatusClass(item.statusCode);
       const statusLabel = item.statusCode != null ? item.statusCode : "-";
       const lengthLabel = item.length != null ? item.length : "-";
@@ -385,7 +385,7 @@ function buildExtractorUI(sdk) {
 
   const renderDetailView = (item) => {
     const isPost = item.method === "POST";
-    const methodBadgeClass = isPost ? "badge-post" : "badge-method";
+    const methodBadgeClass = isPost ? "badge-post" : "badge-get";
     const is200 = item.statusCode === 200;
     const isErr = item.statusCode >= 400;
     const statusBadgeClass = is200 ? "badge-status-200" : (isErr ? "badge-status-err" : "badge-status-other");
@@ -393,7 +393,18 @@ function buildExtractorUI(sdk) {
     const fullPath = item.path + (item.query ? `?${item.query}` : "");
     const hostHeader = item.host || "target";
 
-    const httpRequest = `${item.method} ${fullPath} HTTP/1.1\nHost: ${hostHeader}\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)\nAccept: */*\nConnection: close`;
+    const httpRequestRaw = `${item.method} ${fullPath} HTTP/1.1\nHost: ${hostHeader}\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)\nAccept: */*\nConnection: close`;
+
+    const payloadHtml = formatHighlightedPayload(item.payload);
+    const requestHtml = formatHighlightedHttpRequest(
+      item.method,
+      item.path,
+      item.query,
+      hostHeader,
+      item.statusCode,
+      item.length,
+      item.roundtripTime
+    );
 
     detailInner.innerHTML = `
       <div class="ape-detail-header">
@@ -422,19 +433,19 @@ function buildExtractorUI(sdk) {
         <!-- Column 1: Payload Inspector -->
         <div class="ape-detail-column">
           <div class="ape-detail-column-header">
-            <span>Payload Value (${item.payload.length} chars)</span>
+            <span>Extracted Payload (${item.payload.length} chars)</span>
             <span style="font-size: 10px; font-family: var(--caido-font-mono); opacity: 0.6;">UTF-8</span>
           </div>
-          <pre class="ape-code-viewer">${escapeHtml(item.payload)}</pre>
+          ${payloadHtml}
         </div>
 
-        <!-- Column 2: Reconstructed HTTP Request -->
+        <!-- Column 2: Reconstructed HTTP Request Preview -->
         <div class="ape-detail-column">
           <div class="ape-detail-column-header">
             <span>HTTP Request Preview</span>
             <span style="font-size: 10px; font-family: var(--caido-font-mono); opacity: 0.6;">${escapeHtml(item.method)}</span>
           </div>
-          <pre class="ape-code-viewer">${escapeHtml(httpRequest)}</pre>
+          ${requestHtml}
         </div>
       </div>
     `;
@@ -445,7 +456,7 @@ function buildExtractorUI(sdk) {
     });
 
     detailInner.querySelector("#ape-copy-single-request").addEventListener("click", async () => {
-      await navigator.clipboard.writeText(httpRequest);
+      await navigator.clipboard.writeText(httpRequestRaw);
       showToast(sdk, "Copied HTTP request to clipboard.", "success");
     });
   };
@@ -591,3 +602,84 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
+
+function formatHighlightedPayload(payload) {
+  const lines = String(payload).split("\n");
+  let html = `<div class="caido-code-editor">`;
+  lines.forEach((line, idx) => {
+    const lineNum = idx + 1;
+    html += `
+      <div class="caido-editor-line">
+        <span class="caido-line-num">${lineNum}</span>
+        <span class="caido-line-content">
+          <span class="hl-payload-badge">${escapeHtml(line)}</span>
+        </span>
+      </div>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
+function formatHighlightedHttpRequest(method, path, query, host, statusCode, length, time) {
+  const fullPath = path + (query ? `?${query}` : "");
+  const lines = [
+    { type: "req", method: method || "GET", path: fullPath || "/", proto: "HTTP/1.1" },
+    { type: "header", key: "Host", val: host || "target" },
+    { type: "header", key: "User-Agent", val: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
+    { type: "header", key: "Accept", val: "*/*" },
+    { type: "header", key: "Connection", val: "close" }
+  ];
+
+  if (statusCode != null) {
+    lines.push({ type: "separator" });
+    lines.push({ type: "resp", proto: "HTTP/1.1", status: statusCode, phrase: statusCode === 200 ? "OK" : "" });
+    if (length != null) {
+      lines.push({ type: "header", key: "Content-Length", val: String(length) });
+    }
+    if (time != null) {
+      lines.push({ type: "header", key: "Response-Time", val: `${time}ms` });
+    }
+  }
+
+  let html = `<div class="caido-code-editor">`;
+  let lineCounter = 1;
+
+  lines.forEach((line) => {
+    if (line.type === "req") {
+      html += `
+        <div class="caido-editor-line">
+          <span class="caido-line-num">${lineCounter++}</span>
+          <span class="caido-line-content">
+            <span class="hl-method">${escapeHtml(line.method)}</span> <span class="hl-path">${escapeHtml(line.path)}</span> <span class="hl-proto">${escapeHtml(line.proto)}</span>
+          </span>
+        </div>`;
+    } else if (line.type === "header") {
+      html += `
+        <div class="caido-editor-line">
+          <span class="caido-line-num">${lineCounter++}</span>
+          <span class="caido-line-content">
+            <span class="hl-header-key">${escapeHtml(line.key)}:</span> <span class="hl-header-val">${escapeHtml(line.val)}</span>
+          </span>
+        </div>`;
+    } else if (line.type === "separator") {
+      html += `
+        <div class="caido-editor-line">
+          <span class="caido-line-num">${lineCounter++}</span>
+          <span class="caido-line-content"></span>
+        </div>`;
+    } else if (line.type === "resp") {
+      const statusColorClass = line.status === 200 ? "status-200" : (line.status >= 400 ? "status-400" : "status-300");
+      html += `
+        <div class="caido-editor-line">
+          <span class="caido-line-num">${lineCounter++}</span>
+          <span class="caido-line-content">
+            <span class="hl-proto">${escapeHtml(line.proto)}</span> <span class="${statusColorClass}" style="font-weight: 600;">${escapeHtml(String(line.status))}</span> <span class="hl-method">${escapeHtml(line.phrase)}</span>
+          </span>
+        </div>`;
+    }
+  });
+
+  html += `</div>`;
+  return html;
+}
+

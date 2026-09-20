@@ -1,10 +1,10 @@
 /**
  * Automate Payload Extractor - Stylesheet
- * Strict neutral dark gray theme matching Caido's native palette (zero blue tint).
+ * Strictly built with Caido's authentic dark graphite palette and CodeMirror syntax tokens.
  */
 
 :root {
-  /* Neutral Dark Charcoal & Slate Palette */
+  /* Neutral Dark Charcoal & Graphite Surfaces (zero blue in background) */
   --caido-bg-app: #181a1f;
   --caido-bg-panel: #202227;
   --caido-bg-surface: #24262c;
@@ -27,15 +27,24 @@
   --caido-accent-hover: #fa723d;
   --caido-accent-dim: rgba(240, 100, 47, 0.15);
 
-  /* Status Colors (Neutral gray for redirects, green for 200, red for errors) */
-  --caido-status-200: #4ec96d;
-  --caido-status-300: #b0b4bc;
-  --caido-status-400: #e05252;
-  --caido-status-500: #e05252;
+  /* Caido Native Syntax & Token Colors */
+  --caido-blue: #79c0ff;
+  --caido-blue-dim: rgba(56, 139, 253, 0.15);
+  --caido-blue-border: rgba(88, 166, 255, 0.35);
 
-  /* Method & Header (Neutral clean gray) */
-  --caido-method-neutral: #c4c7cd;
-  --caido-method-post: #d99b64;
+  --caido-yellow: #fec418;
+  --caido-purple: #d2a8ff;
+  --caido-green: #4ec96d;
+  --caido-green-dim: rgba(78, 201, 109, 0.15);
+  --caido-green-border: rgba(78, 201, 109, 0.35);
+
+  --caido-red: #f85149;
+  --caido-red-dim: rgba(248, 81, 73, 0.15);
+  --caido-red-border: rgba(248, 81, 73, 0.35);
+
+  --caido-orange: #ffab70;
+  --caido-orange-dim: rgba(210, 153, 34, 0.15);
+  --caido-orange-border: rgba(210, 153, 34, 0.35);
 
   --caido-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --caido-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
@@ -219,21 +228,21 @@
 }
 
 .ape-filter-chip.chip-200.active {
-  background-color: rgba(78, 201, 109, 0.12);
-  border-color: rgba(78, 201, 109, 0.35);
-  color: var(--caido-status-200);
+  background-color: var(--caido-green-dim);
+  border-color: var(--caido-green-border);
+  color: var(--caido-green);
 }
 
 .ape-filter-chip.chip-3xx.active {
-  background-color: rgba(176, 180, 188, 0.12);
-  border-color: rgba(176, 180, 188, 0.35);
-  color: var(--caido-status-300);
+  background-color: var(--caido-blue-dim);
+  border-color: var(--caido-blue-border);
+  color: var(--caido-blue);
 }
 
 .ape-filter-chip.chip-4xx.active {
-  background-color: rgba(224, 82, 82, 0.12);
-  border-color: rgba(224, 82, 82, 0.35);
-  color: var(--caido-status-400);
+  background-color: var(--caido-red-dim);
+  border-color: var(--caido-red-border);
+  color: var(--caido-red);
 }
 
 .ape-filter-sep {
@@ -334,7 +343,7 @@
   background-color: var(--caido-bg-hover);
 }
 
-/* Selected row style strictly matching Caido's amber left bar */
+/* Selected row style matching Caido's amber left bar */
 .ape-table tbody tr.ape-selected-row {
   background-color: var(--caido-bg-selected);
   box-shadow: inset 3px 0 0 var(--caido-accent);
@@ -349,8 +358,7 @@
 .col-method {
   width: 60px;
   font-family: var(--caido-font-mono);
-  font-weight: 500;
-  color: var(--caido-method-neutral);
+  font-weight: 600;
 }
 
 .col-path {
@@ -387,9 +395,14 @@
   text-align: center;
 }
 
-.status-200 { color: var(--caido-status-200); }
-.status-300 { color: var(--caido-status-300); }
-.status-400, .status-500 { color: var(--caido-status-400); }
+/* Method Colors in Table */
+.method-get { color: var(--caido-blue); }
+.method-post { color: var(--caido-orange); }
+
+/* Status Code Colors in Table */
+.status-200 { color: var(--caido-green); }
+.status-300 { color: var(--caido-blue); }
+.status-400, .status-500 { color: var(--caido-red); }
 .status-none { color: var(--caido-text-muted); }
 
 .ape-row-copy-btn {
@@ -466,22 +479,29 @@
   text-transform: uppercase;
 }
 
-.badge-method {
-  background-color: var(--caido-bg-surface-elevated);
-  color: var(--caido-text-bright);
-  border: 1px solid var(--caido-border-strong);
+/* Method Badge (Blue for GET as requested) */
+.badge-get {
+  background-color: var(--caido-blue-dim);
+  color: var(--caido-blue);
+  border: 1px solid var(--caido-blue-border);
+}
+
+.badge-post {
+  background-color: var(--caido-orange-dim);
+  color: var(--caido-orange);
+  border: 1px solid var(--caido-orange-border);
 }
 
 .badge-status-200 {
-  background-color: rgba(78, 201, 109, 0.12);
-  color: var(--caido-status-200);
-  border: 1px solid rgba(78, 201, 109, 0.35);
+  background-color: var(--caido-green-dim);
+  color: var(--caido-green);
+  border: 1px solid var(--caido-green-border);
 }
 
 .badge-status-err {
-  background-color: rgba(224, 82, 82, 0.12);
-  color: var(--caido-status-400);
-  border: 1px solid rgba(224, 82, 82, 0.35);
+  background-color: var(--caido-red-dim);
+  color: var(--caido-red);
+  border: 1px solid var(--caido-red-border);
 }
 
 .badge-status-other {
@@ -539,18 +559,78 @@
   color: var(--caido-text-muted);
 }
 
-.ape-code-viewer {
+/* Caido Authentic CodeMirror-style Syntax Highlighted Viewer */
+.caido-code-editor {
   flex: 1;
   overflow: auto;
-  padding: 8px 10px;
+  padding: 6px 0;
   margin: 0;
   background-color: var(--caido-bg-app);
   font-family: var(--caido-font-mono);
   font-size: 12px;
-  line-height: 1.5;
+  line-height: 1.55;
   color: var(--caido-text);
+  box-sizing: border-box;
+}
+
+.caido-editor-line {
+  display: flex;
+  align-items: baseline;
+  padding: 0 10px;
+  min-height: 19px;
+  transition: background-color 0.05s ease;
+}
+
+.caido-editor-line:hover {
+  background-color: var(--caido-bg-hover);
+}
+
+.caido-line-num {
+  color: #5d626e;
+  width: 26px;
+  text-align: right;
+  margin-right: 12px;
+  user-select: none;
+  flex-shrink: 0;
+  font-size: 11px;
+}
+
+.caido-line-content {
+  flex: 1;
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+/* Syntax Token Colors (Matching Caido Screen 2) */
+.hl-method {
+  color: var(--caido-purple);
+  font-weight: 600;
+}
+
+.hl-path {
+  color: var(--caido-text-bright);
+}
+
+.hl-proto {
+  color: var(--caido-blue);
+}
+
+.hl-header-key {
+  color: var(--caido-yellow);
+  font-weight: 500;
+}
+
+.hl-header-val {
+  color: var(--caido-text);
+}
+
+.hl-payload-badge {
+  color: var(--caido-text-bright);
+  background-color: var(--caido-accent-dim);
+  border: 1px solid rgba(240, 100, 47, 0.3);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 500;
 }
 
 .ape-empty-detail {
