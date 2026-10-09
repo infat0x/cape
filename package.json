@@ -26,6 +26,7 @@
     "package": "python3 scripts/package.py"
   },
   "devDependencies": {
+    "@caido-community/dev": "0.1.7",
     "@caido/sdk-frontend": "^0.44.0",
     "typescript": "^5.4.0"
   }

@@ -12,7 +12,7 @@ Designed to replicate and streamline the "Copy column" workflow familiar from to
 </p>
 
 <p align="center">
-  <img src="assets/screenshot.png" alt="CAPE - Automate Payload Extractor in action" width="100%">
+  <img src="https://raw.githubusercontent.com/infat0x/cape/main/assets/screenshot.png" alt="CAPE - Automate Payload Extractor in action" width="100%">
 </p>
 
 ---
