@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.4] - 2026-10-09
+
+### Changed
+- Switch distribution packaging to Node.js and JSZip.
+- Add caido.config.ts configuration.
+
 ## [1.0.3] - 2026-10-09
 
 ### Changed
