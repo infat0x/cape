@@ -1,4 +1,5 @@
-name: 🚀 Release
+name: Release Plugin Package
+run-name: "Release Automate Payload Extractor (${{ github.ref_name }}) by @${{ github.actor }}"
 
 on:
   workflow_dispatch:
@@ -11,7 +12,7 @@ on:
 
 jobs:
   release:
-    name: Release
+    name: Build, Sign, and Publish Release
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -24,26 +25,26 @@ jobs:
             exit 1
           fi
 
-      - name: Checkout project
+      - name: Check out repository source code
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Set up Node.js runtime
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Setup Python
+      - name: Set up Python runtime
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Install npm dependencies
         run: npm install
 
-      - name: Build package
+      - name: Build distribution package (plugin_package.zip)
         run: npm run build
 
-      - name: Sign package
+      - name: Digitally sign package (Ed25519)
         working-directory: dist
         run: |
           if [[ -z "${{ secrets.PRIVATE_KEY }}" ]]; then
@@ -58,19 +59,19 @@ jobs:
             rm private_key.pem
           fi
 
-      - name: Check version
+      - name: Read and validate package version
         id: meta
         working-directory: dist
         run: |
           VERSION=$(unzip -p plugin_package.zip manifest.json | jq -r .version)
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
-      - name: Create release
+      - name: Publish immutable release to GitHub
         uses: caido/action-release@v1
         with:
           prerelease: ${{ inputs.prerelease }}
           tag: ${{ steps.meta.outputs.version }}
           commit: ${{ github.sha }}
-          body: 'Release ${{ steps.meta.outputs.version }}'
+          body: 'Automate Payload Extractor v${{ steps.meta.outputs.version }}'
           artifacts: 'dist/plugin_package.zip,dist/plugin_package.zip.sig'
           immutableCreate: true
