@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.1] - 2026-10-09
+
+### Fixed
+* Fix README image URLs for Caido store compatibility
+* Add `@caido-community/dev` dependency and GitHub Actions release workflow
+
+---
+
 ## [1.0.0] - 2026-09-20
 
 ### Added
